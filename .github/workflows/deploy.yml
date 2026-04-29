@@ -1,0 +1,33 @@
+name: Deploy Business MCP
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Hetzner
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.MCP_SERVER_IP }}
+          username: root
+          key: ${{ secrets.MCP_SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            cd /opt/quickesta-mcp
+
+            echo "🔄 Rebuilding Business MCP..."
+            docker compose build --no-cache quickesta-business-mcp
+            docker compose up -d quickesta-business-mcp
+
+            sleep 5
+            if curl -sf http://localhost:4801/health; then
+              echo ""
+              echo "✅ Business MCP deployed successfully!"
+            else
+              echo "❌ Health check failed!"
+              docker compose logs quickesta-business-mcp --tail 20
+              exit 1
+            fi
