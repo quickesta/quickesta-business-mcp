@@ -37,6 +37,7 @@ import {
   createCmsTools,
   createSettingsTools,
   createFileAndMiscTools,
+  createThemeTools,
 } from './tools/index.js'
 import type { ToolDefinition } from './types.js'
 
@@ -66,6 +67,7 @@ const allTools: ToolDefinition[] = [
   ...createCmsTools(hasura),
   ...createSettingsTools(hasura),
   ...createFileAndMiscTools(hasura),
+  ...createThemeTools(hasura),
 ]
 
 const toolMap = new Map(allTools.map((t) => [t.name, t]))
