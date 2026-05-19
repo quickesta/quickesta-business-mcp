@@ -53,7 +53,7 @@ export function createFileAndMiscTools(hasura: HasuraClient): ToolDefinition[] {
       handler: async (args: Record<string, unknown>) => {
         const { monthStart } = getDateRanges()
         return hasura.query({
-          query: `query($product_id: uuid!, $current_month_start: timestamp!) {
+          query: `query($product_id: uuid!, $current_month_start: timestamptz!) {
             members_aggregate(where: {product_id: {_eq: $product_id}}) { aggregate { count } }
             news(where: {product_id: {_eq: $product_id}}, order_by: {created_at: desc}, limit: 5) { id title created_at }
             appointments_aggregate(where: {product_id: {_eq: $product_id}, start_time: {_gte: $current_month_start}}) { aggregate { count } }
@@ -76,7 +76,7 @@ export function createFileAndMiscTools(hasura: HasuraClient): ToolDefinition[] {
       handler: async (args: Record<string, unknown>) => {
         const { monthStart } = getDateRanges()
         return hasura.query({
-          query: `query($product_id: uuid!, $current_month_start: timestamp!) {
+          query: `query($product_id: uuid!, $current_month_start: timestamptz!) {
             customers_aggregate(where: {product_id: {_eq: $product_id}}) { aggregate { count } }
             appointments_aggregate(where: {product_id: {_eq: $product_id}, start_time: {_gte: $current_month_start}}) { aggregate { count } }
             services_aggregate(where: {product_id: {_eq: $product_id}}) { aggregate { count } }
