@@ -20,6 +20,27 @@ export class HasuraClient {
     this.config = config
   }
 
+  // MCP SDK internal fields that must never reach Hasura
+  private static MCP_INTERNAL_FIELDS = new Set([
+    'signal', 'sessionId', 'requestId', 'requestInfo',
+    '_meta', '_progressToken', '_cursor',
+  ])
+
+  /** Strip MCP SDK internal fields from variables before sending to Hasura */
+  private static stripMcpFields(vars?: Record<string, unknown>): Record<string, unknown> | undefined {
+    if (!vars) return vars
+    const cleaned: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(vars)) {
+      if (HasuraClient.MCP_INTERNAL_FIELDS.has(key)) continue
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        cleaned[key] = HasuraClient.stripMcpFields(value as Record<string, unknown>)
+      } else {
+        cleaned[key] = value
+      }
+    }
+    return cleaned
+  }
+
   async query<T = unknown>(options: QueryOptions): Promise<T> {
     const res = await fetch(this.config.url, {
       method: 'POST',
@@ -31,7 +52,7 @@ export class HasuraClient {
       },
       body: JSON.stringify({
         query: options.query,
-        variables: options.variables,
+        variables: HasuraClient.stripMcpFields(options.variables),
       }),
     })
 
