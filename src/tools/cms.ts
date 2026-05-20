@@ -27,10 +27,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `query($product_id: uuid!) {
             blog_posts(where: {product_id: {_eq: $product_id}}, order_by: {created_at: desc}) {
-              id product_id title slug excerpt content featured_image status published_at meta_title meta_description created_at updated_at
-              blog_post_categories { id blog_category { id name slug } }
-              blog_post_tags { id blog_tag { id name slug } }
-              blog_post_authors { id blog_author { id name avatar } }
+              id product_id title slug excerpt featured_image status published_at meta_title meta_description created_at updated_at
             }
           }`,
           variables: { product_id: args.product_id },
@@ -54,9 +51,6 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
           query: `query($id: uuid!) {
             blog_posts_by_pk(id: $id) {
               id product_id title slug excerpt content featured_image status published_at meta_title meta_description created_at updated_at
-              blog_post_categories { id blog_category { id name slug } }
-              blog_post_tags { id blog_tag { id name slug } }
-              blog_post_authors { id blog_author { id name avatar } }
             }
           }`,
           variables: { id: args.id },
@@ -640,7 +634,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `query($product_id: uuid!) {
             pages(where: {product_id: {_eq: $product_id}}, order_by: {sort_order: asc}) {
-              id product_id title slug content featured_image status published_at meta_title meta_description sort_order created_at updated_at
+              id product_id title slug featured_image status published_at meta_title meta_description sort_order created_at updated_at
             }
           }`,
           variables: { product_id: args.product_id },
@@ -663,7 +657,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `query($id: uuid!) {
             pages_by_pk(id: $id) {
-              id product_id title slug content featured_image status published_at meta_title meta_description sort_order created_at updated_at
+              id product_id title slug featured_image status published_at meta_title meta_description sort_order created_at updated_at
             }
           }`,
           variables: { id: args.id },
@@ -689,7 +683,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `mutation($input: pages_insert_input!) {
             insert_pages_one(object: $input) {
-              id product_id title slug content featured_image status published_at meta_title meta_description sort_order created_at updated_at
+              id product_id title slug featured_image status published_at meta_title meta_description sort_order created_at updated_at
             }
           }`,
           variables: { input: args.input },
@@ -716,7 +710,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `mutation($id: uuid!, $input: pages_set_input!) {
             update_pages_by_pk(pk_columns: {id: $id}, _set: $input) {
-              id product_id title slug content featured_image status published_at meta_title meta_description sort_order created_at updated_at
+              id product_id title slug featured_image status published_at meta_title meta_description sort_order created_at updated_at
             }
           }`,
           variables: { id: args.id, input: args.input },

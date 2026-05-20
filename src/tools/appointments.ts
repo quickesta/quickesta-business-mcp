@@ -21,14 +21,14 @@ export function createAppointmentTools(hasura: HasuraClient): ToolDefinition[] {
         properties: {
           where: {
             type: 'object',
-            description: 'appointments_bool_exp filtre nesnesi (zorunlu). Ornek: {product_id: {_eq: "..."}, status: {_eq: "confirmed"}}',
+            description: 'appointments_bool_exp filtre nesnesi (opsiyonel). Ornek: {product_id: {_eq: "..."}, status: {_eq: "confirmed"}}. Bos birakilirsa tum randevular doner.',
           },
         },
-        required: ['where'],
       },
       handler: async (args: Record<string, unknown>) => {
+        const where = (args.where && typeof args.where === 'object') ? args.where : {}
         return hasura.query({
-          query: `query($where: appointments_bool_exp!) {
+          query: `query($where: appointments_bool_exp) {
             appointments(where: $where, order_by: {appointment_date: desc}) {
               id product_id appointment_date start_time end_time total_duration total_price
               status notes cancellation_reason cancelled_at created_at updated_at

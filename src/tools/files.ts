@@ -53,10 +53,10 @@ export function createFileAndMiscTools(hasura: HasuraClient): ToolDefinition[] {
       handler: async (args: Record<string, unknown>) => {
         const { monthStart } = getDateRanges()
         return hasura.query({
-          query: `query($product_id: uuid!, $current_month_start: timestamptz!) {
+          query: `query($product_id: uuid!, $current_month_start: date!) {
             members_aggregate(where: {product_id: {_eq: $product_id}}) { aggregate { count } }
             news(where: {product_id: {_eq: $product_id}}, order_by: {created_at: desc}, limit: 5) { id title created_at }
-            appointments_aggregate(where: {product_id: {_eq: $product_id}, start_time: {_gte: $current_month_start}}) { aggregate { count } }
+            appointments_aggregate(where: {product_id: {_eq: $product_id}, appointment_date: {_gte: $current_month_start}}) { aggregate { count } }
           }`,
           variables: { product_id: args.product_id, current_month_start: monthStart },
         })
@@ -76,9 +76,9 @@ export function createFileAndMiscTools(hasura: HasuraClient): ToolDefinition[] {
       handler: async (args: Record<string, unknown>) => {
         const { monthStart } = getDateRanges()
         return hasura.query({
-          query: `query($product_id: uuid!, $current_month_start: timestamptz!) {
+          query: `query($product_id: uuid!, $current_month_start: date!) {
             customers_aggregate(where: {product_id: {_eq: $product_id}}) { aggregate { count } }
-            appointments_aggregate(where: {product_id: {_eq: $product_id}, start_time: {_gte: $current_month_start}}) { aggregate { count } }
+            appointments_aggregate(where: {product_id: {_eq: $product_id}, appointment_date: {_gte: $current_month_start}}) { aggregate { count } }
             services_aggregate(where: {product_id: {_eq: $product_id}}) { aggregate { count } }
           }`,
           variables: { product_id: args.product_id, current_month_start: monthStart },

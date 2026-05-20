@@ -28,7 +28,6 @@ export function createServiceTools(hasura: HasuraClient): ToolDefinition[] {
           query: `query($product_id: uuid!) {
             services(where: {product_id: {_eq: $product_id}}, order_by: {sort_order: asc}) {
               id product_id category_id name slug description features duration price is_package service_type is_active sort_order created_at updated_at
-              service_category { id name }
             }
           }`,
           variables: { product_id: args.product_id },
@@ -52,7 +51,6 @@ export function createServiceTools(hasura: HasuraClient): ToolDefinition[] {
           query: `query($id: uuid!) {
             services_by_pk(id: $id) {
               id product_id category_id name slug description features duration price is_package service_type is_active sort_order created_at updated_at
-              service_category { id name }
             }
           }`,
           variables: { id: args.id },
@@ -77,7 +75,6 @@ export function createServiceTools(hasura: HasuraClient): ToolDefinition[] {
           query: `query($product_id: uuid!, $category_id: uuid!) {
             services(where: {product_id: {_eq: $product_id}, category_id: {_eq: $category_id}}, order_by: {sort_order: asc}) {
               id product_id category_id name slug description features duration price is_package service_type is_active sort_order created_at updated_at
-              service_category { id name }
             }
           }`,
           variables: { product_id: args.product_id, category_id: args.category_id },
