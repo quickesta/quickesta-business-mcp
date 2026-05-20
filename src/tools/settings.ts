@@ -42,14 +42,16 @@ export function createSettingsTools(hasura: HasuraClient): ToolDefinition[] {
       inputSchema: {
         type: 'object' as const,
         properties: {
+          product_id: { type: 'string', description: 'Urun UUID (zorunlu)' },
           input: {
             type: 'object',
-            description: 'working_hours_insert_input nesnesi (product_id, day_of_week, start_time, end_time, is_working_day, member_id)',
+            description: 'working_hours_insert_input nesnesi (day_of_week, start_time, end_time, is_working_day, member_id)',
           },
         },
-        required: ['input'],
+        required: ['product_id', 'input'],
       },
       handler: async (args: Record<string, unknown>) => {
+        const input = { ...(args.input as Record<string, unknown> || {}), product_id: args.product_id }
         return hasura.query({
           query: `mutation($input: working_hours_insert_input!) {
             insert_working_hours_one(
@@ -62,7 +64,7 @@ export function createSettingsTools(hasura: HasuraClient): ToolDefinition[] {
               id product_id day_of_week start_time end_time is_working_day member_id
             }
           }`,
-          variables: { input: args.input },
+          variables: { input },
         })
       },
     },
@@ -124,14 +126,16 @@ export function createSettingsTools(hasura: HasuraClient): ToolDefinition[] {
       inputSchema: {
         type: 'object' as const,
         properties: {
+          product_id: { type: 'string', description: 'Urun UUID (zorunlu)' },
           input: {
             type: 'object',
-            description: 'contact_info_insert_input nesnesi (product_id, email, phone, address, linkedin_url, youtube_url, twitter_url, instagram_url, facebook_url, tiktok_url)',
+            description: 'contact_info_insert_input nesnesi (email, phone, address, linkedin_url, youtube_url, twitter_url, instagram_url, facebook_url, tiktok_url)',
           },
         },
-        required: ['input'],
+        required: ['product_id', 'input'],
       },
       handler: async (args: Record<string, unknown>) => {
+        const input = { ...(args.input as Record<string, unknown> || {}), product_id: args.product_id }
         return hasura.query({
           query: `mutation($input: contact_info_insert_input!) {
             insert_contact_info_one(
@@ -144,7 +148,7 @@ export function createSettingsTools(hasura: HasuraClient): ToolDefinition[] {
               id product_id email phone address linkedin_url youtube_url twitter_url instagram_url facebook_url tiktok_url
             }
           }`,
-          variables: { input: args.input },
+          variables: { input },
         })
       },
     },
@@ -183,14 +187,16 @@ export function createSettingsTools(hasura: HasuraClient): ToolDefinition[] {
       inputSchema: {
         type: 'object' as const,
         properties: {
+          product_id: { type: 'string', description: 'Urun UUID (zorunlu)' },
           input: {
             type: 'object',
-            description: 'site_info_insert_input nesnesi (product_id, company_name, company_description, slogan, founded_year, footer_text, footer_copyright, website_url, meta_description, meta_keywords, auth_mode, logo_light, logo_dark, favicon)',
+            description: 'site_info_insert_input nesnesi (company_name, company_description, slogan, founded_year, footer_text, footer_copyright, website_url, meta_description, meta_keywords, auth_mode, logo_light, logo_dark, favicon)',
           },
         },
-        required: ['input'],
+        required: ['product_id', 'input'],
       },
       handler: async (args: Record<string, unknown>) => {
+        const input = { ...(args.input as Record<string, unknown> || {}), product_id: args.product_id }
         return hasura.query({
           query: `mutation($input: site_info_insert_input!) {
             insert_site_info_one(
@@ -203,7 +209,7 @@ export function createSettingsTools(hasura: HasuraClient): ToolDefinition[] {
               id product_id company_name company_description slogan founded_year footer_text footer_copyright website_url meta_description meta_keywords auth_mode logo_light logo_dark favicon
             }
           }`,
-          variables: { input: args.input },
+          variables: { input },
         })
       },
     },
@@ -266,14 +272,16 @@ export function createSettingsTools(hasura: HasuraClient): ToolDefinition[] {
       inputSchema: {
         type: 'object' as const,
         properties: {
+          product_id: { type: 'string', description: 'Urun UUID (zorunlu)' },
           input: {
             type: 'object',
-            description: 'policies_insert_input nesnesi (product_id, policy_type, title, content, is_active)',
+            description: 'policies_insert_input nesnesi (policy_type, title, content, is_active)',
           },
         },
-        required: ['input'],
+        required: ['product_id', 'input'],
       },
       handler: async (args: Record<string, unknown>) => {
+        const input = { ...(args.input as Record<string, unknown> || {}), product_id: args.product_id }
         return hasura.query({
           query: `mutation($input: policies_insert_input!) {
             insert_policies_one(
@@ -286,7 +294,7 @@ export function createSettingsTools(hasura: HasuraClient): ToolDefinition[] {
               id product_id policy_type title content is_active
             }
           }`,
-          variables: { input: args.input },
+          variables: { input },
         })
       },
     },
