@@ -38,6 +38,7 @@ import {
   createSettingsTools,
   createFileAndMiscTools,
   createThemeTools,
+  createStudioTools,
 } from './tools/index.js'
 import type { ToolDefinition } from './types.js'
 
@@ -68,6 +69,7 @@ const allTools: ToolDefinition[] = [
   ...createSettingsTools(hasura),
   ...createFileAndMiscTools(hasura),
   ...createThemeTools(hasura),
+  ...createStudioTools(hasura),
 ]
 
 const toolMap = new Map(allTools.map((t) => [t.name, t]))
