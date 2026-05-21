@@ -923,6 +923,50 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
+      name: 'studio_blocks_bulk_set',
+      description:
+        'Bir sayfanin TUM bloklarini tek seferde degistirir (mevcut bloklar silinir, yenileri yazilir). ' +
+        'Toplu islemler icin kullanin — ornegin sayfa sifirdan kurulum veya import.',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu)' },
+          blocks: {
+            type: 'array',
+            description:
+              'Yeni blok dizisi (zorunlu). Her blok: { type, enabled?, data }. ' +
+              'id verilmezse otomatik olusturulur. Sirasi onemli — ilk eleman en uste.',
+            items: { type: 'object' },
+          },
+        },
+        required: ['theme_id', 'page_id', 'blocks'],
+      },
+      handler: async (args: Record<string, unknown>) => {
+        const { id: themeId, config } = await getThemeConfig(hasura, args.theme_id as string)
+        const pageId = args.page_id as string
+        const inputBlocks = args.blocks as Array<{ type: string; enabled?: boolean; data?: any; id?: string }>
+
+        if (!config.pageBlocks) config.pageBlocks = {}
+
+        const blocks = inputBlocks.map((b) => {
+          const defaultFactory = DEFAULT_BLOCK_DATA[b.type]
+          if (!defaultFactory) throw new Error(`Gecersiz blok tipi: ${b.type}`)
+          return {
+            id: b.id || makeBlockId(),
+            type: b.type,
+            enabled: b.enabled !== undefined ? b.enabled : true,
+            data: { ...defaultFactory(), ...(b.data || {}) },
+          }
+        })
+
+        config.pageBlocks[pageId] = { blocks }
+        await saveThemeConfig(hasura, themeId, config)
+        return { page_id: pageId, blocks, count: blocks.length }
+      },
+    },
+
+    {
       name: 'studio_blocks_toggle',
       description:
         'Bir blogu aktif/pasif yapar (gorsel olarak gizler/gosterir, silmez).',
@@ -951,8 +995,190 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // SAYFA YONETIMI — CMS pages atomik islemleri
+    // SAYFA YONETIMI — CMS pages tam CRUD + atomik islemler
     // ═══════════════════════════════════════════════════════════════════════════
+
+    {
+      name: 'studio_pages_list',
+      description:
+        'Urunun tum sayfalarini sirasiyla listeler. Her sayfa: id, title, slug, sort_order, ' +
+        'show_in_header, show_in_footer, is_homepage, parent_id, meta_title, meta_description.',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          product_id: { type: 'string', description: 'Urun ID (zorunlu)' },
+        },
+        required: ['product_id'],
+      },
+      handler: async (args: Record<string, unknown>) =>
+        hasura.query({
+          query: `query($product_id: uuid!) {
+            pages(
+              where: { product_id: { _eq: $product_id } }
+              order_by: { sort_order: asc }
+            ) {
+              id title slug sort_order show_in_header show_in_footer
+              is_homepage parent_id meta_title meta_description status created_at updated_at
+            }
+          }`,
+          variables: { product_id: args.product_id },
+        }),
+    },
+
+    {
+      name: 'studio_pages_create',
+      description:
+        'Yeni sayfa olusturur. Varsayilan olarak header ve footer\'da gorunur, status: published. ' +
+        'Slug otomatik olusturulmaz — siz gonderin (ornek: "about", "services", "contact").',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          product_id: { type: 'string', description: 'Urun ID (zorunlu)' },
+          title: { type: 'string', description: 'Sayfa basligi (zorunlu, ornek: "Hakkimizda")' },
+          slug: { type: 'string', description: 'URL slug (zorunlu, ornek: "about"). Anasayfa icin bos string gonderin.' },
+          show_in_header: { type: 'boolean', description: 'Header menusunde gorunur mu? (varsayilan: true)' },
+          show_in_footer: { type: 'boolean', description: 'Footer menusunde gorunur mu? (varsayilan: true)' },
+          is_homepage: { type: 'boolean', description: 'Anasayfa mi? (varsayilan: false). True ise diger sayfalarin is_homepage otomatik temizlenmez — studio_pages_set_homepage kullanin.' },
+          parent_id: { type: 'string', description: 'Ust sayfa UUID (opsiyonel, hiyerarsik yapilar icin)' },
+          sort_order: { type: 'integer', description: 'Siralama (opsiyonel, kucuk sayi = onde)' },
+          meta_title: { type: 'string', description: 'SEO baslik (opsiyonel)' },
+          meta_description: { type: 'string', description: 'SEO aciklama (opsiyonel)' },
+        },
+        required: ['product_id', 'title', 'slug'],
+      },
+      handler: async (args: Record<string, unknown>) =>
+        hasura.query({
+          query: `mutation($input: pages_insert_input!) {
+            insert_pages_one(object: $input) {
+              id title slug sort_order show_in_header show_in_footer is_homepage parent_id meta_title meta_description
+            }
+          }`,
+          variables: {
+            input: {
+              product_id: args.product_id,
+              title: args.title,
+              slug: args.slug,
+              status: 'published',
+              show_in_header: args.show_in_header ?? true,
+              show_in_footer: args.show_in_footer ?? true,
+              is_homepage: args.is_homepage ?? false,
+              parent_id: args.parent_id ?? null,
+              sort_order: args.sort_order ?? null,
+              meta_title: args.meta_title ?? null,
+              meta_description: args.meta_description ?? null,
+            },
+          },
+        }),
+    },
+
+    {
+      name: 'studio_pages_update',
+      description:
+        'Sayfa ozelliklerini gunceller — baslik, slug, menude gorunurluk, SEO bilgileri, siralama.',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu)' },
+          title: { type: 'string', description: 'Yeni baslik (opsiyonel)' },
+          slug: { type: 'string', description: 'Yeni URL slug (opsiyonel)' },
+          show_in_header: { type: 'boolean', description: 'Header menusunde gorunur mu? (opsiyonel)' },
+          show_in_footer: { type: 'boolean', description: 'Footer menusunde gorunur mu? (opsiyonel)' },
+          parent_id: { type: 'string', description: 'Ust sayfa UUID (opsiyonel, null = kok sayfa)' },
+          sort_order: { type: 'integer', description: 'Yeni siralama (opsiyonel)' },
+          meta_title: { type: 'string', description: 'SEO baslik (opsiyonel)' },
+          meta_description: { type: 'string', description: 'SEO aciklama (opsiyonel)' },
+        },
+        required: ['page_id'],
+      },
+      handler: async (args: Record<string, unknown>) => {
+        const setFields: Record<string, unknown> = {}
+        for (const key of ['title', 'slug', 'show_in_header', 'show_in_footer', 'parent_id', 'sort_order', 'meta_title', 'meta_description']) {
+          if (args[key] !== undefined) setFields[key] = args[key]
+        }
+        if (Object.keys(setFields).length === 0) throw new Error('En az bir alan guncellenmelidir')
+        return hasura.query({
+          query: `mutation($id: uuid!, $changes: pages_set_input!) {
+            update_pages_by_pk(pk_columns: { id: $id }, _set: $changes) {
+              id title slug sort_order show_in_header show_in_footer is_homepage parent_id meta_title meta_description
+            }
+          }`,
+          variables: { id: args.page_id, changes: setFields },
+        })
+      },
+    },
+
+    {
+      name: 'studio_pages_delete',
+      description:
+        'Sayfayi siler. Ayrica tema config\'inden o sayfanin bloklarini da temizler (theme_id verilirse).',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          page_id: { type: 'string', description: 'Silinecek sayfa UUID (zorunlu)' },
+          theme_id: { type: 'string', description: 'Draft tema UUID (opsiyonel — verilirse pageBlocks\'tan da temizlenir)' },
+        },
+        required: ['page_id'],
+      },
+      handler: async (args: Record<string, unknown>) => {
+        // Delete page from DB
+        const result = await hasura.query({
+          query: `mutation($id: uuid!) {
+            delete_pages_by_pk(id: $id) { id title }
+          }`,
+          variables: { id: args.page_id },
+        })
+
+        // Clean up pageBlocks from theme config if theme_id provided
+        if (args.theme_id) {
+          try {
+            const { id: themeId, config } = await getThemeConfig(hasura, args.theme_id as string)
+            if (config.pageBlocks?.[args.page_id as string]) {
+              delete config.pageBlocks[args.page_id as string]
+              await saveThemeConfig(hasura, themeId, config)
+            }
+          } catch { /* non-critical cleanup */ }
+        }
+
+        return result
+      },
+    },
+
+    {
+      name: 'studio_pages_reorder',
+      description:
+        'Sayfalarin sirasini toplu gunceller. Her sayfa icin yeni sort_order degeri gonderin.',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          pages: {
+            type: 'array',
+            description: 'Siralama listesi (zorunlu). Her eleman: { page_id: string, sort_order: number }',
+            items: {
+              type: 'object',
+              properties: {
+                page_id: { type: 'string' },
+                sort_order: { type: 'integer' },
+              },
+            },
+          },
+        },
+        required: ['pages'],
+      },
+      handler: async (args: Record<string, unknown>) => {
+        const pages = args.pages as Array<{ page_id: string; sort_order: number }>
+        if (!pages?.length) throw new Error('En az bir sayfa gonderin')
+
+        // Build individual update mutations aliased by index
+        const mutations = pages.map((p, i) =>
+          `p${i}: update_pages_by_pk(pk_columns: { id: "${p.page_id}" }, _set: { sort_order: ${p.sort_order} }) { id sort_order }`
+        ).join('\n')
+
+        return hasura.query({
+          query: `mutation { ${mutations} }`,
+          variables: {},
+        })
+      },
+    },
 
     {
       name: 'studio_pages_set_homepage',
@@ -1184,6 +1410,100 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
           }`,
           variables: { product_id: args.product_id },
         }),
+    },
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // TAM DURUM — editor icin tek cagirimda tum veri
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    {
+      name: 'studio_get_full_state',
+      description:
+        'Editor\'un tam durumunu tek cagirimda getirir: draft tema (config dahil), published tema, ' +
+        'tum sayfalar ve onboarding durumu. AI\'nin storefront\'u anlamasi icin ilk cagri bu olmalidir.',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          product_id: { type: 'string', description: 'Urun ID (zorunlu)' },
+        },
+        required: ['product_id'],
+      },
+      handler: async (args: Record<string, unknown>) =>
+        hasura.query({
+          query: `query($product_id: uuid!) {
+            drafts: themes(
+              where: { product_id: { _eq: $product_id }, status: { _eq: "draft" } }
+              order_by: { updated_at: desc }
+              limit: 1
+            ) { ${THEME_FIELDS} }
+            published: themes(
+              where: { product_id: { _eq: $product_id }, status: { _eq: "published" } }
+              limit: 1
+            ) { ${THEME_FIELDS} }
+            pages(
+              where: { product_id: { _eq: $product_id } }
+              order_by: { sort_order: asc }
+            ) {
+              id title slug sort_order show_in_header show_in_footer
+              is_homepage parent_id meta_title meta_description status
+            }
+            site_info(where: { product_id: { _eq: $product_id } }) {
+              company_name company_description slogan logo_light logo_dark favicon
+              footer_text footer_copyright website_url meta_description meta_keywords
+            }
+            contact_info(where: { product_id: { _eq: $product_id } }) {
+              email phone address linkedin_url youtube_url twitter_url
+              instagram_url facebook_url tiktok_url
+            }
+          }`,
+          variables: { product_id: args.product_id },
+        }),
+    },
+
+    {
+      name: 'studio_get_page_with_blocks',
+      description:
+        'Bir sayfanin CMS bilgilerini VE bloklarini birlikte getirir. ' +
+        'Sayfa detayi DB\'den, bloklar tema config\'inden okunur.',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          product_id: { type: 'string', description: 'Urun ID (zorunlu)' },
+          theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu)' },
+        },
+        required: ['product_id', 'theme_id', 'page_id'],
+      },
+      handler: async (args: Record<string, unknown>) => {
+        // Fetch page from DB and theme config in parallel
+        const [pageResult, themeData] = await Promise.all([
+          hasura.query({
+            query: `query($id: uuid!) {
+              pages_by_pk(id: $id) {
+                id title slug sort_order show_in_header show_in_footer
+                is_homepage parent_id meta_title meta_description status created_at updated_at
+              }
+            }`,
+            variables: { id: args.page_id },
+          }),
+          getThemeConfig(hasura, args.theme_id as string),
+        ])
+
+        const page = (pageResult as any)?.pages_by_pk
+        const blocks = themeData.config.pageBlocks?.[args.page_id as string]?.blocks || []
+
+        return {
+          page,
+          blocks,
+          block_count: blocks.length,
+          block_summary: blocks.map((b: any) => ({
+            id: b.id,
+            type: b.type,
+            enabled: b.enabled,
+            title: b.data?.title || b.data?.content?.slice(0, 50) || b.type,
+          })),
+        }
+      },
     },
   ]
 }
