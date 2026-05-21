@@ -1,12 +1,33 @@
 /**
- * Studio araclari — Storefront theme editor workflow'lari.
+ * Studio MCP Araclari — Storefront editor'un TUM yeteneklerini MCP uzerinden sunar.
  *
- * business-mcp icindeki diger tool'lar temel CRUD saglar;
- * bu dosyadakiler Studio'ya ozel is akislarini kapsar:
- *   - Theme draft/publish lifecycle
- *   - Atomik homepage atama
- *   - Block preview sorgulari
- *   - Onboarding durum kontrolu
+ * Bu tool'lar AI asistanlarin bir isletmenin web sitesini (storefront) tamamen
+ * duzenlemesini saglar: tema renkleri, tipografi, layout, sayfa bloklari,
+ * blok ekleme/silme/siralama, CMS icerik onizleme ve daha fazlasi.
+ *
+ * MIMARI:
+ *   Tema (theme) = JSONB config olarak DB'de saklanir.
+ *   config icinde:
+ *     - colors       → 17 renk token'i (HSL formatinda)
+ *     - typography   → font ailesi, boyut, agirlik
+ *     - layout       → border radius, konteyner genisligi, bosluk
+ *     - darkMode     → karanlik mod renkleri
+ *     - header       → ust bar, yukseklik, CTA buton
+ *     - footer       → renk, kolon sayisi, ikon stili
+ *     - pageBlocks   → { [page_id]: { blocks: Block[] } }
+ *
+ *   Block = { id, type, enabled, data: { ...type-specific } }
+ *   19 blok tipi: hero, services, products, news, blog, faq, testimonials,
+ *     gallery, team, cta, text, image, spacer, features_grid, stats,
+ *     working_model, map, two_column, booking, contact_form
+ *
+ * KULLANIM AKISI:
+ *   1. studio_themes_get_active → mevcut draft tema config'ini al
+ *   2. studio_blocks_list → bir sayfanin bloklarini gor
+ *   3. studio_blocks_add / update / remove / reorder → bloklari duzenle
+ *   4. studio_theme_update_colors / typography / layout → genel tema ayarlarini degistir
+ *   5. studio_themes_update_draft → tum config'i kaydet
+ *   6. studio_themes_publish → canli siteye yayinla
  */
 
 import type { HasuraClient } from '../hasura-client.js'
@@ -14,14 +35,176 @@ import type { ToolDefinition } from '../types.js'
 
 const THEME_FIELDS = `id product_id name status version schema_version config parent_id published_at created_at updated_at`
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function makeBlockId(): string {
+  return `b_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`
+}
+
+/** Read theme config, return parsed or throw */
+async function getThemeConfig(hasura: HasuraClient, themeId: string): Promise<{ id: string; config: any }> {
+  const result: any = await hasura.query({
+    query: `query($id: uuid!) { themes_by_pk(id: $id) { id config } }`,
+    variables: { id: themeId },
+  })
+  const row = result?.themes_by_pk
+  if (!row) throw new Error(`Tema bulunamadi: ${themeId}`)
+  return { id: row.id, config: typeof row.config === 'string' ? JSON.parse(row.config) : row.config }
+}
+
+/** Write theme config back */
+async function saveThemeConfig(hasura: HasuraClient, themeId: string, config: any): Promise<any> {
+  return hasura.query({
+    query: `mutation($id: uuid!, $config: jsonb!) {
+      update_themes_by_pk(pk_columns: { id: $id }, _set: { config: $config }) {
+        id status config updated_at
+      }
+    }`,
+    variables: { id: themeId, config },
+  })
+}
+
+// ── Default block data factories ─────────────────────────────────────────────
+
+const DEFAULT_BLOCK_DATA: Record<string, () => any> = {
+  hero: () => ({
+    variant: 'centered',
+    heroStyle: 'default',
+    title: 'Hos geldiniz',
+    subtitle: '',
+    ctaPrimary: { label: 'Hemen Baslayin', href: '/contact' },
+    ctaSecondary: undefined,
+    showImage: false,
+    imageUrl: '',
+    backgroundFileId: undefined,
+  }),
+  services: () => ({
+    title: 'Hizmetlerimiz',
+    subtitle: '',
+    columns: 3,
+    cardStyle: 'border',
+    showImage: true,
+    limit: 9,
+  }),
+  products: () => ({
+    title: 'Urunler',
+    subtitle: '',
+    columns: 3,
+    limit: 12,
+    showPrice: true,
+  }),
+  news: () => ({
+    title: 'Haberler',
+    subtitle: '',
+    columns: 3,
+    limit: 6,
+  }),
+  blog: () => ({
+    title: 'Blog',
+    subtitle: '',
+    columns: 3,
+    limit: 6,
+  }),
+  faq: () => ({
+    title: 'Sikca Sorulan Sorular',
+    subtitle: '',
+    style: 'accordion',
+  }),
+  testimonials: () => ({
+    title: 'Musteri Yorumlari',
+    subtitle: '',
+    layout: 'grid',
+    columns: 3,
+  }),
+  gallery: () => ({
+    title: 'Galeri',
+    columns: 4,
+    items: [],
+    folderId: undefined,
+  }),
+  team: () => ({
+    title: 'Ekibimiz',
+    subtitle: '',
+    columns: 3,
+  }),
+  cta: () => ({
+    title: 'Hemen Baslayin',
+    subtitle: '',
+    buttonLabel: 'Randevu Al',
+    buttonHref: '/book',
+    variant: 'centered',
+  }),
+  text: () => ({
+    content: '',
+    align: 'left',
+    maxWidth: 'md',
+  }),
+  image: () => ({
+    url: '',
+    fileId: undefined,
+    alt: '',
+    caption: '',
+    maxWidth: 'lg',
+  }),
+  spacer: () => ({
+    size: 'md',
+  }),
+  features_grid: () => ({
+    title: 'Neden Bizi Tercih Etmelisiniz?',
+    subtitle: '',
+    columns: 3,
+    style: 'glass',
+    backgroundFilled: true,
+    items: [],
+  }),
+  stats: () => ({
+    title: 'Rakamlarla Biz',
+    subtitle: '',
+    columns: 4,
+    items: [],
+  }),
+  working_model: () => ({
+    title: 'Calisma Modelimiz',
+    subtitle: '',
+    steps: [],
+  }),
+  map: () => ({
+    title: '',
+    height: 'md',
+    showAddressOverlay: true,
+  }),
+  two_column: () => ({
+    title: '',
+    leftContent: '',
+    rightContent: '',
+    ratio: '50-50',
+    style: 'default',
+  }),
+  booking: () => ({
+    title: 'Online Randevu',
+    subtitle: '',
+    buttonLabel: 'Randevu Al',
+    buttonHref: '/book',
+  }),
+  contact_form: () => ({
+    title: 'Bize Ulasin',
+  }),
+}
+
+// ── Tool definitions ─────────────────────────────────────────────────────────
+
 export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
   return [
-    // ═══ THEME WORKFLOW ═══
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // TEMA LIFECYCLE — draft/publish akisi
+    // ═══════════════════════════════════════════════════════════════════════════
 
     {
       name: 'studio_themes_get_active',
       description:
-        'Studio: Urunun aktif draft ve published temasini getirir (sadece son birer tane).',
+        'Urunun aktif draft ve published temasini getirir (sadece son birer tane). ' +
+        'Config JSONB icerir: colors, typography, layout, darkMode, header, footer, pageBlocks.',
       inputSchema: {
         type: 'object' as const,
         properties: {
@@ -49,15 +232,23 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     {
       name: 'studio_themes_create_draft',
       description:
-        'Studio: Yeni draft tema olusturur (status otomatik "draft").',
+        'Yeni draft tema olusturur. Config: { version: "1.0.0", colors, typography, layout, darkMode, header, footer, pageBlocks }. ' +
+        'schema_version daima "1.0.0" gonderilmeli.',
       inputSchema: {
         type: 'object' as const,
         properties: {
           product_id: { type: 'string', description: 'Urun ID (zorunlu)' },
-          config: { type: 'object', description: 'Tema konfigurasyonu JSONB (zorunlu)' },
-          schema_version: { type: 'string', description: 'Tema sema versiyonu (zorunlu)' },
-          parent_id: { type: 'string', description: 'Kaynak tema UUID (opsiyonel)' },
-          name: { type: 'string', description: 'Tema adi (opsiyonel)' },
+          config: {
+            type: 'object',
+            description:
+              'Tema config JSONB (zorunlu). Icerik: { version: "1.0.0", colors: {17 HSL token}, ' +
+              'typography: {fontFamily, baseSize, headingScale, weight}, layout: {radius, containerWidth, spacing}, ' +
+              'darkMode: {enabled, colors?}, header?: {topBar?, height?, ctaButton?}, footer?: {backgroundColor?, columns?, socialIconStyle?}, ' +
+              'pageBlocks: { [page_id]: { blocks: Block[] } } }',
+          },
+          schema_version: { type: 'string', description: 'Tema sema versiyonu — daima "1.0.0" (zorunlu)' },
+          parent_id: { type: 'string', description: 'Kaynak/published tema UUID (opsiyonel)' },
+          name: { type: 'string', description: 'Tema adi (opsiyonel, varsayilan: "Draft")' },
         },
         required: ['product_id', 'config', 'schema_version'],
       },
@@ -86,36 +277,31 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     {
       name: 'studio_themes_update_draft',
       description:
-        'Studio: Draft temanin config JSONB\'sini gunceller.',
+        'Draft temanin TUM config JSONB\'sini gunceller. Komple config gonderin — parcali guncelleme icin ' +
+        'once studio_themes_get_active ile mevcut config\'i alin, degistirin, buraya gonderin.',
       inputSchema: {
         type: 'object' as const,
         properties: {
           id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
-          config: { type: 'object', description: 'Yeni tema konfigurasyonu JSONB (zorunlu)' },
+          config: { type: 'object', description: 'Yeni tema konfigurasyonu JSONB — tum config (zorunlu)' },
         },
         required: ['id', 'config'],
       },
       handler: async (args: Record<string, unknown>) =>
-        hasura.query({
-          query: `mutation($id: uuid!, $config: jsonb!) {
-            update_themes_by_pk(pk_columns: { id: $id }, _set: { config: $config }) {
-              id status config updated_at
-            }
-          }`,
-          variables: { id: args.id, config: args.config },
-        }),
+        saveThemeConfig(hasura, args.id as string, args.config),
     },
 
     {
       name: 'studio_themes_publish',
       description:
-        'Studio: Atomik tema yayinlama — mevcut published temayi arsivler, draft\'i published yapar ve versiyonu arttirir.',
+        'Atomik tema yayinlama — mevcut published temayi arsivler, draft\'i published yapar ve versiyonu arttirir. ' +
+        'Bu islem canli storefront\'u aninda gunceller.',
       inputSchema: {
         type: 'object' as const,
         properties: {
           product_id: { type: 'string', description: 'Urun ID (zorunlu)' },
           draft_id: { type: 'string', description: 'Yayinlanacak draft tema UUID (zorunlu)' },
-          next_version: { type: 'integer', description: 'Yeni versiyon numarasi (zorunlu)' },
+          next_version: { type: 'integer', description: 'Yeni versiyon numarasi (zorunlu, mevcut version + 1)' },
         },
         required: ['product_id', 'draft_id', 'next_version'],
       },
@@ -139,12 +325,639 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
         }),
     },
 
-    // ═══ PAGE WORKFLOW ═══
+    // ═══════════════════════════════════════════════════════════════════════════
+    // TEMA PARCALI GUNCELLEME — renkler, tipografi, layout, header, footer
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    {
+      name: 'studio_theme_update_colors',
+      description:
+        'Draft temanin renklerini gunceller. Her renk HSL objesi: { h: 0-360, s: 0-100, l: 0-100 }. ' +
+        '17 token: background, foreground, primary, primaryForeground, secondary, secondaryForeground, ' +
+        'accent, accentForeground, muted, mutedForeground, border, input, ring, card, cardForeground, ' +
+        'destructive, destructiveForeground. Sadece degisen token\'lari gonderin, geri kalani korunur.',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
+          colors: {
+            type: 'object',
+            description:
+              'Guncellenecek renk token\'lari. Ornek: { primary: { h: 220, s: 90, l: 50 }, background: { h: 0, s: 0, l: 100 } }',
+          },
+        },
+        required: ['theme_id', 'colors'],
+      },
+      handler: async (args: Record<string, unknown>) => {
+        const { id, config } = await getThemeConfig(hasura, args.theme_id as string)
+        config.colors = { ...config.colors, ...(args.colors as any) }
+        return saveThemeConfig(hasura, id, config)
+      },
+    },
+
+    {
+      name: 'studio_theme_update_typography',
+      description:
+        'Draft temanin tipografi ayarlarini gunceller. ' +
+        'fontFamily: "inter"|"geist"|"system"|"serif"|"mono", ' +
+        'baseSize: 12-20 (px), headingScale: 1.1-1.5 (carpan), ' +
+        'weight: "normal"|"medium"|"semibold"|"bold".',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
+          typography: {
+            type: 'object',
+            description:
+              'Tipografi ayarlari. Ornek: { fontFamily: "inter", baseSize: 16, headingScale: 1.25, weight: "semibold" }',
+          },
+        },
+        required: ['theme_id', 'typography'],
+      },
+      handler: async (args: Record<string, unknown>) => {
+        const { id, config } = await getThemeConfig(hasura, args.theme_id as string)
+        config.typography = { ...config.typography, ...(args.typography as any) }
+        return saveThemeConfig(hasura, id, config)
+      },
+    },
+
+    {
+      name: 'studio_theme_update_layout',
+      description:
+        'Draft temanin layout ayarlarini gunceller. ' +
+        'radius: 0-2 (rem, border radius), containerWidth: "narrow"|"default"|"wide"|"full", ' +
+        'spacing: "compact"|"default"|"relaxed".',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
+          layout: {
+            type: 'object',
+            description: 'Layout ayarlari. Ornek: { radius: 0.5, containerWidth: "default", spacing: "default" }',
+          },
+        },
+        required: ['theme_id', 'layout'],
+      },
+      handler: async (args: Record<string, unknown>) => {
+        const { id, config } = await getThemeConfig(hasura, args.theme_id as string)
+        config.layout = { ...config.layout, ...(args.layout as any) }
+        return saveThemeConfig(hasura, id, config)
+      },
+    },
+
+    {
+      name: 'studio_theme_update_header',
+      description:
+        'Draft temanin header (ust bilgi cubugu) ayarlarini gunceller. ' +
+        'topBar: { enabled, height (px), backgroundColor (HSL) }, ' +
+        'height: { mobile (px), tablet (px), desktop (px) }, ' +
+        'ctaButton: { label, href, icon: "mail"|"phone"|"arrow" }.',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
+          header: {
+            type: 'object',
+            description:
+              'Header ayarlari. Ornek: { topBar: { enabled: true, height: 40 }, ctaButton: { label: "Teklif Al", href: "/contact", icon: "mail" } }',
+          },
+        },
+        required: ['theme_id', 'header'],
+      },
+      handler: async (args: Record<string, unknown>) => {
+        const { id, config } = await getThemeConfig(hasura, args.theme_id as string)
+        config.header = { ...(config.header || {}), ...(args.header as any) }
+        return saveThemeConfig(hasura, id, config)
+      },
+    },
+
+    {
+      name: 'studio_theme_update_footer',
+      description:
+        'Draft temanin footer (alt bilgi) ayarlarini gunceller. ' +
+        'backgroundColor (HSL), borderColor (HSL), columns: 2-4, ' +
+        'socialIconStyle: "circle"|"square"|"minimal".',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
+          footer: {
+            type: 'object',
+            description:
+              'Footer ayarlari. Ornek: { columns: 4, socialIconStyle: "circle" }',
+          },
+        },
+        required: ['theme_id', 'footer'],
+      },
+      handler: async (args: Record<string, unknown>) => {
+        const { id, config } = await getThemeConfig(hasura, args.theme_id as string)
+        config.footer = { ...(config.footer || {}), ...(args.footer as any) }
+        return saveThemeConfig(hasura, id, config)
+      },
+    },
+
+    {
+      name: 'studio_theme_toggle_dark_mode',
+      description:
+        'Draft temanin karanlik mod ayarini acar/kapatir. ' +
+        'Opsiyonel olarak karanlik mod icin ayri renkler verilebilir.',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
+          enabled: { type: 'boolean', description: 'Karanlik mod acik mi? (zorunlu)' },
+          colors: {
+            type: 'object',
+            description: 'Karanlik mod icin ozel renkler (opsiyonel, ayni 17 HSL token)',
+          },
+        },
+        required: ['theme_id', 'enabled'],
+      },
+      handler: async (args: Record<string, unknown>) => {
+        const { id, config } = await getThemeConfig(hasura, args.theme_id as string)
+        config.darkMode = {
+          enabled: args.enabled as boolean,
+          ...(args.colors ? { colors: args.colors } : {}),
+        }
+        return saveThemeConfig(hasura, id, config)
+      },
+    },
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // BLOK YONETIMI — sayfa bazli blok islemleri
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    {
+      name: 'studio_block_types',
+      description:
+        'Kullanilabilir 19 blok tipini, kategorilerini ve varsayilan ayarlarini listeler. ' +
+        'AI\'nin hangi bloku nerede kullanacagini anlamasi icin referans tool\'udur.',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {},
+      },
+      handler: async () => ({
+        block_types: [
+          {
+            type: 'hero', category: 'hero', label: 'Hero / Banner',
+            description: 'Sayfanin en ust kismi — baslik, alt baslik, CTA butonlari, arkaplan gorseli. Genellikle anasayfada kullanilir.',
+            data_fields: {
+              variant: { type: 'enum', values: ['centered', 'split', 'minimal'], default: 'centered' },
+              heroStyle: { type: 'enum', values: ['default', 'glass-overlay'], default: 'default' },
+              title: { type: 'string', default: 'Hos geldiniz' },
+              subtitle: { type: 'string', optional: true },
+              ctaPrimary: { type: 'object', fields: { label: 'string', href: 'string' }, optional: true },
+              ctaSecondary: { type: 'object', fields: { label: 'string', href: 'string' }, optional: true },
+              showImage: { type: 'boolean', default: false },
+              imageUrl: { type: 'string', optional: true },
+              backgroundFileId: { type: 'string', optional: true, note: 'Dosya yoneticisinden secilen gorsel ID' },
+            },
+          },
+          {
+            type: 'services', category: 'data', label: 'Hizmetler',
+            description: 'CMS\'deki hizmetleri grid olarak gosterir. Veri otomatik cekilir.',
+            data_fields: {
+              title: { type: 'string', default: 'Hizmetlerimiz' },
+              subtitle: { type: 'string', optional: true },
+              columns: { type: 'number', min: 1, max: 4, default: 3 },
+              cardStyle: { type: 'enum', values: ['shadow', 'border', 'minimal', 'glass'], default: 'border' },
+              showImage: { type: 'boolean', default: true },
+              limit: { type: 'number', min: 1, max: 100, default: 9 },
+            },
+          },
+          {
+            type: 'products', category: 'data', label: 'Urunler',
+            description: 'CMS\'deki urun katalogunu grid olarak gosterir.',
+            data_fields: {
+              title: { type: 'string', default: 'Urunler' },
+              subtitle: { type: 'string', optional: true },
+              columns: { type: 'number', min: 1, max: 4, default: 3 },
+              limit: { type: 'number', min: 1, max: 100, default: 12 },
+              showPrice: { type: 'boolean', default: true },
+            },
+          },
+          {
+            type: 'news', category: 'data', label: 'Haberler',
+            description: 'Yayinlanmis haberleri kart olarak gosterir.',
+            data_fields: {
+              title: { type: 'string', default: 'Haberler' },
+              subtitle: { type: 'string', optional: true },
+              columns: { type: 'number', min: 1, max: 4, default: 3 },
+              limit: { type: 'number', min: 1, max: 20, default: 6 },
+            },
+          },
+          {
+            type: 'blog', category: 'data', label: 'Blog',
+            description: 'Yayinlanmis blog yazilarini kart olarak gosterir.',
+            data_fields: {
+              title: { type: 'string', default: 'Blog' },
+              subtitle: { type: 'string', optional: true },
+              columns: { type: 'number', min: 1, max: 4, default: 3 },
+              limit: { type: 'number', min: 1, max: 20, default: 6 },
+            },
+          },
+          {
+            type: 'faq', category: 'data', label: 'SSS',
+            description: 'Sikca sorulan sorulari accordion/kart olarak gosterir.',
+            data_fields: {
+              title: { type: 'string', default: 'Sikca Sorulan Sorular' },
+              subtitle: { type: 'string', optional: true },
+              style: { type: 'enum', values: ['accordion', 'cards', 'simple'], default: 'accordion' },
+            },
+          },
+          {
+            type: 'testimonials', category: 'data', label: 'Referanslar / Yorumlar',
+            description: 'Musteri referanslarini/yorumlarini grid veya carousel olarak gosterir.',
+            data_fields: {
+              title: { type: 'string', default: 'Musteri Yorumlari' },
+              subtitle: { type: 'string', optional: true },
+              layout: { type: 'enum', values: ['grid', 'carousel'], default: 'grid' },
+              columns: { type: 'number', min: 1, max: 4, default: 3 },
+            },
+          },
+          {
+            type: 'gallery', category: 'media', label: 'Galeri',
+            description: 'Gorsel galerisi — dosya yoneticisinden gorseller secilir.',
+            data_fields: {
+              title: { type: 'string', default: 'Galeri' },
+              columns: { type: 'number', min: 2, max: 6, default: 4 },
+              items: { type: 'array', item_fields: { fileId: 'string', alt: 'string?', caption: 'string?' } },
+              folderId: { type: 'string', optional: true, note: 'Dosya yoneticisi klasor ID' },
+            },
+          },
+          {
+            type: 'team', category: 'data', label: 'Ekip',
+            description: 'Aktif ekip uyelerini kart olarak gosterir.',
+            data_fields: {
+              title: { type: 'string', default: 'Ekibimiz' },
+              subtitle: { type: 'string', optional: true },
+              columns: { type: 'number', min: 1, max: 4, default: 3 },
+            },
+          },
+          {
+            type: 'cta', category: 'content', label: 'CTA (Aksiyon Cagrisi)',
+            description: 'Dikkat cekici aksiyon butonu — randevu, iletisim vb. yonlendirme.',
+            data_fields: {
+              title: { type: 'string', default: 'Hemen Baslayin' },
+              subtitle: { type: 'string', optional: true },
+              buttonLabel: { type: 'string', default: 'Randevu Al' },
+              buttonHref: { type: 'string', default: '/book' },
+              variant: { type: 'enum', values: ['banner', 'card', 'centered'], default: 'centered' },
+            },
+          },
+          {
+            type: 'text', category: 'content', label: 'Metin',
+            description: 'Serbest metin blogu — aciklama, paragraf, duyuru icin.',
+            data_fields: {
+              content: { type: 'string', default: '' },
+              align: { type: 'enum', values: ['left', 'center', 'right'], default: 'left' },
+              maxWidth: { type: 'enum', values: ['sm', 'md', 'lg', 'full'], default: 'md' },
+            },
+          },
+          {
+            type: 'image', category: 'media', label: 'Gorsel',
+            description: 'Tekli gorsel blogu — URL veya dosya yoneticisinden.',
+            data_fields: {
+              url: { type: 'string', default: '' },
+              fileId: { type: 'string', optional: true },
+              alt: { type: 'string', default: '' },
+              caption: { type: 'string', optional: true },
+              maxWidth: { type: 'enum', values: ['sm', 'md', 'lg', 'full'], default: 'lg' },
+            },
+          },
+          {
+            type: 'spacer', category: 'utility', label: 'Bosluk',
+            description: 'Bloklar arasi bosluk birakir.',
+            data_fields: {
+              size: { type: 'enum', values: ['sm', 'md', 'lg', 'xl'], default: 'md' },
+            },
+          },
+          {
+            type: 'features_grid', category: 'content', label: 'Ozellikler Grid',
+            description: 'Ikon + baslik + aciklama kartlari — "Neden biz?" tarzi bolumler icin.',
+            data_fields: {
+              title: { type: 'string', default: 'Neden Bizi Tercih Etmelisiniz?' },
+              subtitle: { type: 'string', optional: true },
+              columns: { type: 'number', min: 1, max: 4, default: 3 },
+              style: { type: 'enum', values: ['card', 'glass', 'minimal'], default: 'glass' },
+              backgroundFilled: { type: 'boolean', default: true },
+              items: { type: 'array', item_fields: { icon: 'string', title: 'string', description: 'string' } },
+            },
+          },
+          {
+            type: 'stats', category: 'content', label: 'Istatistikler',
+            description: 'Sayisal istatistikler — "500+ musteri", "10 yil tecrube" tarzinda.',
+            data_fields: {
+              title: { type: 'string', optional: true },
+              subtitle: { type: 'string', optional: true },
+              columns: { type: 'number', min: 2, max: 4, default: 4 },
+              items: { type: 'array', item_fields: { number: 'string', label: 'string', description: 'string?' } },
+            },
+          },
+          {
+            type: 'working_model', category: 'content', label: 'Calisma Modeli',
+            description: 'Adim adim surec aciklamasi — "1. Randevu al → 2. Gelin → 3. Sonuc" tarzi.',
+            data_fields: {
+              title: { type: 'string', default: 'Calisma Modelimiz' },
+              subtitle: { type: 'string', optional: true },
+              steps: { type: 'array', item_fields: { number: 'string', title: 'string', description: 'string', icon: 'string' } },
+            },
+          },
+          {
+            type: 'map', category: 'utility', label: 'Harita',
+            description: 'Google Maps embed — isletme konumunu gosterir (contact_info adres verisini kullanir).',
+            data_fields: {
+              title: { type: 'string', optional: true },
+              height: { type: 'enum', values: ['sm', 'md', 'lg'], default: 'md' },
+              showAddressOverlay: { type: 'boolean', default: true },
+            },
+          },
+          {
+            type: 'two_column', category: 'content', label: 'Iki Kolon',
+            description: 'Iki kolonlu icerik blogu — metin/gorsel yan yana.',
+            data_fields: {
+              title: { type: 'string', optional: true },
+              leftContent: { type: 'string', default: '' },
+              rightContent: { type: 'string', default: '' },
+              ratio: { type: 'enum', values: ['50-50', '60-40', '40-60'], default: '50-50' },
+              style: { type: 'enum', values: ['default', 'card', 'glass'], default: 'default' },
+            },
+          },
+          {
+            type: 'booking', category: 'functional', label: 'Randevu',
+            description: 'Online randevu yonlendirme blogu — buton ile /book sayfasina yonlendirir.',
+            data_fields: {
+              title: { type: 'string', default: 'Online Randevu' },
+              subtitle: { type: 'string', optional: true },
+              buttonLabel: { type: 'string', default: 'Randevu Al' },
+              buttonHref: { type: 'string', default: '/book' },
+            },
+          },
+          {
+            type: 'contact_form', category: 'functional', label: 'Iletisim Formu',
+            description: 'Iletisim formu blogu — ziyaretciler mesaj gonderebilir.',
+            data_fields: {
+              title: { type: 'string', default: 'Bize Ulasin' },
+            },
+          },
+        ],
+        categories: {
+          hero: 'Ana banner / giris bolumu',
+          data: 'CMS verilerini gosteren dinamik bloklar (services, products, news, blog, faq, testimonials, team)',
+          content: 'Statik icerik bloklari (text, cta, features_grid, stats, working_model, two_column)',
+          media: 'Gorsel ve galeri bloklari (image, gallery)',
+          utility: 'Yardimci bloklar (spacer, map)',
+          functional: 'Interaktif bloklar (booking, contact_form)',
+        },
+        notes: [
+          'Her blok bir id (otomatik), type, enabled (true/false) ve data iceriyordur.',
+          'CMS-driven bloklar (services, products, news, blog, faq, testimonials, team) veritabanindan otomatik veri ceker.',
+          'Statik bloklar (hero, text, cta, features_grid, stats, working_model) iceriklerini dogrudan data field\'larinda tasir.',
+          'Bloklar sayfa bazli saklanir: theme.config.pageBlocks[page_id].blocks dizisi.',
+        ],
+      }),
+    },
+
+    {
+      name: 'studio_blocks_list',
+      description:
+        'Bir sayfanin tum bloklarini sirasiyla listeler. Tema config\'inden pageBlocks[page_id].blocks dizisini okur.',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu)' },
+        },
+        required: ['theme_id', 'page_id'],
+      },
+      handler: async (args: Record<string, unknown>) => {
+        const { config } = await getThemeConfig(hasura, args.theme_id as string)
+        const pageBlocks = config.pageBlocks?.[args.page_id as string]
+        return {
+          page_id: args.page_id,
+          blocks: pageBlocks?.blocks || [],
+          count: pageBlocks?.blocks?.length || 0,
+        }
+      },
+    },
+
+    {
+      name: 'studio_blocks_add',
+      description:
+        'Sayfaya yeni blok ekler. Blok tipi ve opsiyonel data verin — varsayilan degerler otomatik uygulanir. ' +
+        'position ile istenen siraya eklenebilir (varsayilan: sona).',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu)' },
+          block_type: {
+            type: 'string',
+            description:
+              'Blok tipi (zorunlu). Gecerli tipler: hero, services, products, news, blog, faq, ' +
+              'testimonials, gallery, team, cta, text, image, spacer, features_grid, stats, ' +
+              'working_model, map, two_column, booking, contact_form',
+          },
+          data: {
+            type: 'object',
+            description: 'Blok verisi (opsiyonel). Verilmezse varsayilan degerler kullanilir. Tiplere gore field\'lar icin studio_block_types tool\'unu kullanin.',
+          },
+          position: {
+            type: 'integer',
+            description: 'Ekleme pozisyonu — 0 = en basa, verilmezse sona eklenir (opsiyonel)',
+          },
+          enabled: {
+            type: 'boolean',
+            description: 'Blok aktif mi? (opsiyonel, varsayilan: true)',
+          },
+        },
+        required: ['theme_id', 'page_id', 'block_type'],
+      },
+      handler: async (args: Record<string, unknown>) => {
+        const blockType = args.block_type as string
+        const defaultFactory = DEFAULT_BLOCK_DATA[blockType]
+        if (!defaultFactory) throw new Error(`Gecersiz blok tipi: ${blockType}. studio_block_types ile gecerli tipleri gorun.`)
+
+        const { id: themeId, config } = await getThemeConfig(hasura, args.theme_id as string)
+        const pageId = args.page_id as string
+
+        if (!config.pageBlocks) config.pageBlocks = {}
+        if (!config.pageBlocks[pageId]) config.pageBlocks[pageId] = { blocks: [] }
+
+        const newBlock = {
+          id: makeBlockId(),
+          type: blockType,
+          enabled: args.enabled !== undefined ? args.enabled : true,
+          data: { ...defaultFactory(), ...(args.data as any || {}) },
+        }
+
+        const blocks = config.pageBlocks[pageId].blocks
+        const pos = args.position as number | undefined
+        if (pos !== undefined && pos >= 0 && pos < blocks.length) {
+          blocks.splice(pos, 0, newBlock)
+        } else {
+          blocks.push(newBlock)
+        }
+
+        await saveThemeConfig(hasura, themeId, config)
+        return { added_block: newBlock, total_blocks: blocks.length }
+      },
+    },
+
+    {
+      name: 'studio_blocks_update',
+      description:
+        'Mevcut bir blogun data field\'larini gunceller. Sadece degisen field\'lari gonderin, geri kalani korunur.',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu)' },
+          block_id: { type: 'string', description: 'Blok UUID (zorunlu)' },
+          data: {
+            type: 'object',
+            description: 'Guncellenecek data field\'lari (zorunlu). Mevcut data ile merge edilir.',
+          },
+        },
+        required: ['theme_id', 'page_id', 'block_id', 'data'],
+      },
+      handler: async (args: Record<string, unknown>) => {
+        const { id: themeId, config } = await getThemeConfig(hasura, args.theme_id as string)
+        const blocks = config.pageBlocks?.[args.page_id as string]?.blocks
+        if (!blocks) throw new Error('Sayfa bloklari bulunamadi')
+
+        const block = blocks.find((b: any) => b.id === args.block_id)
+        if (!block) throw new Error(`Blok bulunamadi: ${args.block_id}`)
+
+        block.data = { ...block.data, ...(args.data as any) }
+        await saveThemeConfig(hasura, themeId, config)
+        return { updated_block: block }
+      },
+    },
+
+    {
+      name: 'studio_blocks_remove',
+      description: 'Sayfadan bir blogu kaldirir.',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu)' },
+          block_id: { type: 'string', description: 'Silinecek blok UUID (zorunlu)' },
+        },
+        required: ['theme_id', 'page_id', 'block_id'],
+      },
+      handler: async (args: Record<string, unknown>) => {
+        const { id: themeId, config } = await getThemeConfig(hasura, args.theme_id as string)
+        const pageBlocks = config.pageBlocks?.[args.page_id as string]
+        if (!pageBlocks?.blocks) throw new Error('Sayfa bloklari bulunamadi')
+
+        const before = pageBlocks.blocks.length
+        pageBlocks.blocks = pageBlocks.blocks.filter((b: any) => b.id !== args.block_id)
+        if (pageBlocks.blocks.length === before) throw new Error(`Blok bulunamadi: ${args.block_id}`)
+
+        await saveThemeConfig(hasura, themeId, config)
+        return { removed: args.block_id, remaining_blocks: pageBlocks.blocks.length }
+      },
+    },
+
+    {
+      name: 'studio_blocks_reorder',
+      description:
+        'Bir blogun sayfadaki sirasini degistirir. from_index\'ten to_index\'e tasir.',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu)' },
+          block_id: { type: 'string', description: 'Tasinacak blok UUID (zorunlu)' },
+          to_index: { type: 'integer', description: 'Hedef pozisyon (0-tabanli, zorunlu)' },
+        },
+        required: ['theme_id', 'page_id', 'block_id', 'to_index'],
+      },
+      handler: async (args: Record<string, unknown>) => {
+        const { id: themeId, config } = await getThemeConfig(hasura, args.theme_id as string)
+        const blocks = config.pageBlocks?.[args.page_id as string]?.blocks
+        if (!blocks) throw new Error('Sayfa bloklari bulunamadi')
+
+        const fromIndex = blocks.findIndex((b: any) => b.id === args.block_id)
+        if (fromIndex === -1) throw new Error(`Blok bulunamadi: ${args.block_id}`)
+
+        const [block] = blocks.splice(fromIndex, 1)
+        const toIndex = Math.max(0, Math.min(args.to_index as number, blocks.length))
+        blocks.splice(toIndex, 0, block)
+
+        await saveThemeConfig(hasura, themeId, config)
+        return { block_id: args.block_id, new_index: toIndex, total_blocks: blocks.length }
+      },
+    },
+
+    {
+      name: 'studio_blocks_duplicate',
+      description:
+        'Bir blogu kopyalar — orijinalin hemen altina ayni data ile yeni ID\'li kopya ekler.',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu)' },
+          block_id: { type: 'string', description: 'Kopyalanacak blok UUID (zorunlu)' },
+        },
+        required: ['theme_id', 'page_id', 'block_id'],
+      },
+      handler: async (args: Record<string, unknown>) => {
+        const { id: themeId, config } = await getThemeConfig(hasura, args.theme_id as string)
+        const blocks = config.pageBlocks?.[args.page_id as string]?.blocks
+        if (!blocks) throw new Error('Sayfa bloklari bulunamadi')
+
+        const index = blocks.findIndex((b: any) => b.id === args.block_id)
+        if (index === -1) throw new Error(`Blok bulunamadi: ${args.block_id}`)
+
+        const clone = JSON.parse(JSON.stringify(blocks[index]))
+        clone.id = makeBlockId()
+        blocks.splice(index + 1, 0, clone)
+
+        await saveThemeConfig(hasura, themeId, config)
+        return { original_id: args.block_id, clone: clone, total_blocks: blocks.length }
+      },
+    },
+
+    {
+      name: 'studio_blocks_toggle',
+      description:
+        'Bir blogu aktif/pasif yapar (gorsel olarak gizler/gosterir, silmez).',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu)' },
+          block_id: { type: 'string', description: 'Blok UUID (zorunlu)' },
+          enabled: { type: 'boolean', description: 'Aktif mi? (zorunlu)' },
+        },
+        required: ['theme_id', 'page_id', 'block_id', 'enabled'],
+      },
+      handler: async (args: Record<string, unknown>) => {
+        const { id: themeId, config } = await getThemeConfig(hasura, args.theme_id as string)
+        const blocks = config.pageBlocks?.[args.page_id as string]?.blocks
+        if (!blocks) throw new Error('Sayfa bloklari bulunamadi')
+
+        const block = blocks.find((b: any) => b.id === args.block_id)
+        if (!block) throw new Error(`Blok bulunamadi: ${args.block_id}`)
+
+        block.enabled = args.enabled as boolean
+        await saveThemeConfig(hasura, themeId, config)
+        return { block_id: args.block_id, enabled: block.enabled }
+      },
+    },
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // SAYFA YONETIMI — CMS pages atomik islemleri
+    // ═══════════════════════════════════════════════════════════════════════════
 
     {
       name: 'studio_pages_set_homepage',
       description:
-        'Studio: Atomik homepage atama — tum sayfalardaki is_homepage\'i temizler, belirtilen sayfayi homepage yapar.',
+        'Atomik homepage atama — tum sayfalardaki is_homepage\'i temizler, belirtilen sayfayi homepage yapar.',
       inputSchema: {
         type: 'object' as const,
         properties: {
@@ -169,12 +982,13 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
         }),
     },
 
-    // ═══ BLOCK PREVIEW ═══
+    // ═══════════════════════════════════════════════════════════════════════════
+    // BLOK ONIZLEME — CMS verilerini preview icin ceker
+    // ═══════════════════════════════════════════════════════════════════════════
 
     {
       name: 'studio_preview_services',
-      description:
-        'Studio: Blok onizleme icin limitli servis listesi.',
+      description: 'Blok onizleme icin limitli servis listesi (services blogu verisi).',
       inputSchema: {
         type: 'object' as const,
         properties: {
@@ -198,8 +1012,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
 
     {
       name: 'studio_preview_news',
-      description:
-        'Studio: Blok onizleme icin limitli yayinlanmis haber listesi.',
+      description: 'Blok onizleme icin limitli yayinlanmis haber listesi (news blogu verisi).',
       inputSchema: {
         type: 'object' as const,
         properties: {
@@ -223,8 +1036,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
 
     {
       name: 'studio_preview_blog',
-      description:
-        'Studio: Blok onizleme icin limitli yayinlanmis blog yazisi listesi.',
+      description: 'Blok onizleme icin limitli yayinlanmis blog yazisi listesi (blog blogu verisi).',
       inputSchema: {
         type: 'object' as const,
         properties: {
@@ -248,8 +1060,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
 
     {
       name: 'studio_preview_faq',
-      description:
-        'Studio: Blok onizleme icin FAQ maddeleri (maks 8).',
+      description: 'Blok onizleme icin FAQ maddeleri (faq blogu verisi, maks 8).',
       inputSchema: {
         type: 'object' as const,
         properties: {
@@ -272,8 +1083,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
 
     {
       name: 'studio_preview_team',
-      description:
-        'Studio: Blok onizleme icin aktif ekip uyeleri listesi.',
+      description: 'Blok onizleme icin aktif ekip uyeleri listesi (team blogu verisi).',
       inputSchema: {
         type: 'object' as const,
         properties: {
@@ -297,8 +1107,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
 
     {
       name: 'studio_preview_products',
-      description:
-        'Studio: Blok onizleme icin aktif urun katalogu listesi.',
+      description: 'Blok onizleme icin aktif urun katalogu listesi (products blogu verisi).',
       inputSchema: {
         type: 'object' as const,
         properties: {
@@ -320,12 +1129,16 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
         }),
     },
 
-    // ═══ ONBOARDING ═══
+    // ═══════════════════════════════════════════════════════════════════════════
+    // ONBOARDING — icerik doldurulma durumu
+    // ═══════════════════════════════════════════════════════════════════════════
 
     {
       name: 'studio_onboarding_status',
       description:
-        'Studio: Baslangic rehberi — tum iceriklerin doldurulma durumunu dondurur (aggregate count\'lar).',
+        'Baslangic rehberi — tum icerik turlerinin doldurulma durumunu dondurur. ' +
+        'Hangi bolumler dolu, hangileri bos: site_info, working_hours, contact_info, policies, ' +
+        'pages, services, blog_posts, news, faq_items, members.',
       inputSchema: {
         type: 'object' as const,
         properties: {
