@@ -1,6 +1,6 @@
 /**
  * Dosya yöneticisi, yükleme linkleri, çeviriler, dashboard istatistikleri
- * ve destek talepleri (tickets).
+ * dosya yönetimi ve dashboard.
  *
  * Tüm sorgular $variable sözdizimi kullanır — string interpolasyon yok.
  */
@@ -17,21 +17,8 @@ const UPLOAD_LINK_FIELDS = `id product_id token label description target_folder 
 
 const TRANSLATION_FIELDS = `id product_id entity_type entity_id locale field_name field_value is_active created_at updated_at deleted_at`
 
-const TICKET_FIELDS = `id ticket_number title category priority status source_platform created_at updated_at`
+// Tickets removed — admin/cloud internal support panel, not business customer data
 
-const TICKET_DETAIL_FIELDS = `id ticket_number organization_id product_id reporter_id reporter_name reporter_email title description category priority status source_platform created_at updated_at resolved_at closed_at
-  product { id name product_type { code name } }
-  ticket_messages(where: {is_internal: {_eq: false}}, order_by: {created_at: asc}) {
-    id ticket_id sender_id sender_name sender_email content is_internal message_type created_at
-    ticket_attachments { id file_name original_name file_path s3_key file_url file_type mime_type file_size uploaded_by uploaded_by_name created_at }
-  }
-  ticket_attachments(where: {message_id: {_is_null: true}}, order_by: {created_at: asc}) {
-    id file_name original_name file_path s3_key file_url file_type mime_type file_size uploaded_by uploaded_by_name created_at
-  }`
-
-const TICKET_MSG_FIELDS = `id ticket_id sender_id sender_name sender_email content is_internal message_type created_at`
-
-const TICKET_ATTACH_FIELDS = `id ticket_id message_id file_name original_name file_path s3_key file_url file_type mime_type file_size uploaded_by uploaded_by_name created_at`
 
 export function createFileAndMiscTools(hasura: HasuraClient): ToolDefinition[] {
   return [
@@ -528,127 +515,5 @@ export function createFileAndMiscTools(hasura: HasuraClient): ToolDefinition[] {
       }),
     },
 
-    // ═══════════════════════════════════════════════
-    //  TICKETS
-    // ═══════════════════════════════════════════════
-
-    {
-      name: 'business_tickets_list',
-      description: 'Destek taleplerini listele.',
-      inputSchema: {
-        type: 'object' as const,
-        properties: {
-          where: { type: 'object', description: 'tickets_bool_exp filtresi (zorunlu)' },
-          limit: { type: 'number', description: 'Maks sonuç' },
-          offset: { type: 'number', description: 'Sayfalama offset' },
-        },
-        required: ['where'],
-      },
-      handler: async (args: Record<string, unknown>) => hasura.query({
-        query: `query($where: tickets_bool_exp!, $limit: Int, $offset: Int) {
-          tickets(where: $where, order_by: {updated_at: desc}, limit: $limit, offset: $offset) {
-            ${TICKET_FIELDS}
-            product { id name product_type { code name } }
-            ticket_messages_aggregate(where: {is_internal: {_eq: false}}) { aggregate { count } }
-          }
-          tickets_aggregate(where: $where) { aggregate { count } }
-        }`,
-        variables: {
-          where: args.where,
-          limit: args.limit ?? null,
-          offset: args.offset ?? null,
-        },
-      }),
-    },
-
-    {
-      name: 'business_tickets_get',
-      description: 'Tek destek talebi detayı — mesajlar ve ekler dahil.',
-      inputSchema: {
-        type: 'object' as const,
-        properties: {
-          id: { type: 'string', description: 'Ticket UUID (zorunlu)' },
-        },
-        required: ['id'],
-      },
-      handler: async (args: Record<string, unknown>) => hasura.query({
-        query: `query($id: uuid!) {
-          tickets_by_pk(id: $id) { ${TICKET_DETAIL_FIELDS} }
-        }`,
-        variables: { id: args.id },
-      }),
-    },
-
-    {
-      name: 'business_tickets_create',
-      description: 'Yeni destek talebi oluştur.',
-      inputSchema: {
-        type: 'object' as const,
-        properties: {
-          organization_id: { type: 'number', description: 'Organizasyon ID (zorunlu)' },
-          product_id: { type: 'string', description: 'Ürün ID (zorunlu)' },
-          title: { type: 'string', description: 'Başlık (zorunlu)' },
-          description: { type: 'string' },
-          category: { type: 'string', description: 'Kategori' },
-          priority: { type: 'string', description: 'low, medium, high, urgent' },
-          reporter_id: { type: 'string' }, reporter_name: { type: 'string' },
-          reporter_email: { type: 'string' }, source_platform: { type: 'string' },
-        },
-        required: ['organization_id', 'product_id', 'title'],
-      },
-      handler: async (args: Record<string, unknown>) => hasura.query({
-        query: `mutation($input: tickets_insert_input!) {
-          insert_tickets_one(object: $input) { id ticket_number title status created_at }
-        }`,
-        variables: { input: args },
-      }),
-    },
-
-    {
-      name: 'business_tickets_create_message',
-      description: 'Destek talebine mesaj ekle.',
-      inputSchema: {
-        type: 'object' as const,
-        properties: {
-          ticket_id: { type: 'string', description: 'Ticket UUID (zorunlu)' },
-          content: { type: 'string', description: 'Mesaj içeriği (zorunlu)' },
-          sender_id: { type: 'string' }, sender_name: { type: 'string' },
-          sender_email: { type: 'string' }, is_internal: { type: 'boolean' },
-          message_type: { type: 'string' },
-        },
-        required: ['ticket_id', 'content'],
-      },
-      handler: async (args: Record<string, unknown>) => hasura.query({
-        query: `mutation($input: ticket_messages_insert_input!) {
-          insert_ticket_messages_one(object: $input) { ${TICKET_MSG_FIELDS} }
-        }`,
-        variables: { input: args },
-      }),
-    },
-
-    {
-      name: 'business_tickets_create_attachment',
-      description: 'Destek talebine dosya ekle.',
-      inputSchema: {
-        type: 'object' as const,
-        properties: {
-          ticket_id: { type: 'string', description: 'Ticket UUID (zorunlu)' },
-          message_id: { type: 'string', description: 'Mesaj UUID (opsiyonel — mesaja bağlı değilse boş)' },
-          file_name: { type: 'string', description: 'Dosya adı (zorunlu)' },
-          original_name: { type: 'string' }, file_path: { type: 'string' },
-          s3_key: { type: 'string' }, file_url: { type: 'string' },
-          file_type: { type: 'string' }, mime_type: { type: 'string' },
-          file_size: { type: 'number' }, uploaded_by: { type: 'string' },
-          uploaded_by_name: { type: 'string' },
-        },
-        required: ['ticket_id', 'file_name'],
-      },
-      handler: async (args: Record<string, unknown>) => hasura.query({
-        query: `mutation($input: ticket_attachments_insert_input!) {
-          insert_ticket_attachments_one(object: $input) { ${TICKET_ATTACH_FIELDS} }
-        }`,
-        variables: { input: args },
-      }),
-    },
   ]
 }
