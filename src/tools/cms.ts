@@ -634,7 +634,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `query($product_id: uuid!) {
             pages(where: {product_id: {_eq: $product_id}}, order_by: {sort_order: asc}) {
-              id product_id title slug status published_at meta_title meta_description meta_keywords sort_order parent_id is_homepage show_in_header show_in_footer is_default created_at updated_at
+              id product_id title slug status meta_title meta_description meta_keywords sort_order parent_id is_homepage show_in_header show_in_footer is_default created_at updated_at
             }
           }`,
           variables: { product_id: args.product_id },
@@ -657,7 +657,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `query($id: uuid!) {
             pages_by_pk(id: $id) {
-              id product_id title slug status published_at meta_title meta_description meta_keywords sort_order parent_id is_homepage show_in_header show_in_footer is_default created_at updated_at
+              id product_id title slug status meta_title meta_description meta_keywords sort_order parent_id is_homepage show_in_header show_in_footer is_default created_at updated_at
             }
           }`,
           variables: { id: args.id },
@@ -683,7 +683,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `mutation($input: pages_insert_input!) {
             insert_pages_one(object: $input) {
-              id product_id title slug status published_at meta_title meta_description meta_keywords sort_order parent_id is_homepage show_in_header show_in_footer is_default created_at updated_at
+              id product_id title slug status meta_title meta_description meta_keywords sort_order parent_id is_homepage show_in_header show_in_footer is_default created_at updated_at
             }
           }`,
           variables: { input: args.input },
@@ -710,7 +710,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `mutation($id: uuid!, $input: pages_set_input!) {
             update_pages_by_pk(pk_columns: {id: $id}, _set: $input) {
-              id product_id title slug status published_at meta_title meta_description meta_keywords sort_order parent_id is_homepage show_in_header show_in_footer is_default created_at updated_at
+              id product_id title slug status meta_title meta_description meta_keywords sort_order parent_id is_homepage show_in_header show_in_footer is_default created_at updated_at
             }
           }`,
           variables: { id: args.id, input: args.input },
@@ -744,7 +744,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
     // ── Sayfa Yayinla ──
     {
       name: 'business_pages_publish',
-      description: 'Bir sayfayi yayinlar (status=published, published_at=now).',
+      description: 'Bir sayfayi yayinlar (status=published).',
       inputSchema: {
         type: 'object' as const,
         properties: {
@@ -755,8 +755,8 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
       handler: async (args: Record<string, unknown>) => {
         return hasura.query({
           query: `mutation($id: uuid!) {
-            update_pages_by_pk(pk_columns: {id: $id}, _set: {status: "published", published_at: "now()"}) {
-              id status published_at
+            update_pages_by_pk(pk_columns: {id: $id}, _set: {status: "published"}) {
+              id status
             }
           }`,
           variables: { id: args.id },
