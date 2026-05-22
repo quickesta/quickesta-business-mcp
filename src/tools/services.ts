@@ -194,7 +194,7 @@ export function createServiceTools(hasura: HasuraClient): ToolDefinition[] {
         properties: {
           input: {
             type: 'object',
-            description: 'service_categories_insert_input nesnesi (product_id, name, slug, description, icon, sort_order, is_active)',
+            description: 'Hizmet kategorisi nesnesi. Alanlar: product_id (zorunlu), name (zorunlu), slug (zorunlu, URL-safe), description (duz metin), content (Lexical JSON — zengin icerik, opsiyonel), icon (ikon adi), image (dosya UUID — file_manager.id referansi, kategori gorseli), sort_order (sayi), is_active (boolean, varsayilan: true).',
           },
         },
         required: ['input'],

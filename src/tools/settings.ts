@@ -190,7 +190,7 @@ export function createSettingsTools(hasura: HasuraClient): ToolDefinition[] {
           product_id: { type: 'string', description: 'Urun UUID (zorunlu)' },
           input: {
             type: 'object',
-            description: 'Site bilgileri. Alanlar: company_name (duz metin), company_description, slogan, founded_year (tamsayi: 2020), footer_text, footer_copyright, website_url, meta_description, meta_keywords (PostgreSQL text dizisi — JSON array gonderin: ["k1","k2"], virgullu string KABUL EDILMEZ), auth_mode ("public"|"private"), logo_light (dosya UUID veya null), logo_dark (dosya UUID veya null), favicon (dosya UUID veya null). UYARI: Upsert tum alanlari gondermenizi gerektirir — kismi guncelleme icin once business_site_info_get ile mevcut veriyi alin, degistirin, tekrar gonderin.',
+            description: 'Site bilgileri. Alanlar: company_name (duz metin), company_description, slogan, founded_year (tamsayi: 2020), footer_text, footer_copyright, website_url, meta_description, meta_keywords (PostgreSQL text dizisi — JSON array gonderin: ["k1","k2"], virgullu string KABUL EDILMEZ), auth_mode ("guest"|"guest_with_login"|"login_required"), logo_light (file_manager.id UUID — business_files_create\'den donen id), logo_dark (file_manager.id UUID veya null), favicon (file_manager.id UUID veya null). UYARI: Upsert tum alanlari gondermenizi gerektirir — kismi guncelleme icin once business_site_info_get ile mevcut veriyi alin, degistirin, tekrar gonderin.',
           },
         },
         required: ['product_id', 'input'],

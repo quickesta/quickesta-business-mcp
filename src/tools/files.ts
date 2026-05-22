@@ -201,11 +201,25 @@ export function createFileAndMiscTools(hasura: HasuraClient): ToolDefinition[] {
 
     {
       name: 'business_files_create',
-      description: 'Dosya kaydı oluştur (S3 yükleme sonrası).',
+      description:
+        'S3 yukleme sonrasi dosya kaydini DB\'ye olusturur. Donen id (UUID) diger entity\'lerde kullanilir ' +
+        '(ornegin blog_posts.featured_image, site_info.logo_light, products_catalog.images dizisi, members.avatar vb.). ' +
+        'AKIS: 1) business_files_get_upload_url ile presigned URL alin, 2) dosyayi yukleyin, ' +
+        '3) bu tool ile DB kaydini olusturun (db_record objesini kullanin + file_size ekleyin), ' +
+        '4) donen id UUID\'sini entity field\'ina yazin. ' +
+        'input alanlari: product_id (zorunlu), name (UUID+ext dosya adi), original_name (orijinal ad), ' +
+        'file_path (s3_key ile ayni), s3_key (S3 yolu), file_url (referans URL), ' +
+        'file_type ("image"|"video"|"audio"|"document"|"other"), mime_type ("image/png" vb.), ' +
+        'file_size (byte, tamsayi), folder_path ("/" veya "/images/"), is_folder (false).',
       inputSchema: {
         type: 'object' as const,
         properties: {
-          input: { type: 'object', description: 'file_manager_insert_input (zorunlu)' },
+          input: {
+            type: 'object',
+            description:
+              'file_manager_insert_input. business_files_get_upload_url\'dan donen db_record objesini kullanin, ' +
+              'file_size ekleyin. Donen id UUID\'si entity\'lerde kullanilir.',
+          },
         },
         required: ['input'],
       },

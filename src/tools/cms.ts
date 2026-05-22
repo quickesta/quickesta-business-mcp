@@ -193,7 +193,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         properties: {
           input: {
             type: 'object',
-            description: 'blog_categories_insert_input nesnesi (product_id, name, slug, description, sort_order, is_active)',
+            description: 'Blog kategorisi nesnesi. Alanlar: product_id (zorunlu), name (zorunlu), slug (zorunlu, URL-safe — title\'dan uretilmeli: kucuk harf, ozel karakter sil, bosluk yerine tire), description (duz metin), color (hex renk kodu, opsiyonel — ornekler: "#3B82F6","#10B981","#EF4444","#F59E0B","#8B5CF6","#EC4899","#F97316","#6B7280"), icon (ikon adi, opsiyonel), sort_order (sayi, varsayilan: 0), is_active (boolean, varsayilan: true).',
           },
         },
         required: ['input'],
@@ -1030,7 +1030,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         properties: {
           input: {
             type: 'object',
-            description: 'Referans nesnesi. Alanlar: product_id (zorunlu), name (musteri/sirket adi, zorunlu), title (proje basligi), description (proje aciklamasi, duz metin), logo_url (dosya UUID veya URL), website_url (proje linki), testimonial (musteri yorumu, duz metin), rating (1-5 sayi), sort_order (sayi), is_active (boolean).',
+            description: 'Referans nesnesi. Alanlar: product_id (zorunlu), name (musteri/sirket adi, zorunlu), title (proje basligi), description (proje aciklamasi, duz metin), logo_url (dosya UUID — file_manager.id referansi), website_url (proje linki URL), testimonial (musteri yorumu, duz metin), testimonial_author (yorum yapan kisi adi), testimonial_position (yorum yapan kisi unvani), rating (1-5 sayi), client_sector (sektor adi), project_images (dosya UUID dizisi), sort_order (sayi), is_active (boolean).',
           },
         },
         required: ['input'],
@@ -1286,7 +1286,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         properties: {
           input: {
             type: 'object',
-            description: 'product_categories_insert_input nesnesi (product_id, name, slug, description, sort_order, is_active)',
+            description: 'Urun kategorisi nesnesi. Alanlar: product_id (zorunlu), name (zorunlu), slug (zorunlu, URL-safe), description (duz metin), parent_id (ust kategori UUID — hiyerarsik yapilar icin, opsiyonel), sort_order (sayi), is_active (boolean).',
           },
         },
         required: ['input'],
@@ -1389,7 +1389,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         properties: {
           input: {
             type: 'object',
-            description: 'product_brands_insert_input nesnesi (product_id, name, slug, logo_url, description, is_active)',
+            description: 'Urun markasi nesnesi. Alanlar: product_id (zorunlu), name (zorunlu), slug (zorunlu, URL-safe), image_id (dosya UUID — marka logosu, file_manager.id referansi), description (duz metin), website_url (marka web sitesi URL), parent_id (ust marka UUID, hiyerarsik, opsiyonel), is_active (boolean), is_featured (boolean), sort_order (sayi).',
           },
         },
         required: ['input'],
