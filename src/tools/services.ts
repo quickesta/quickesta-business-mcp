@@ -91,7 +91,7 @@ export function createServiceTools(hasura: HasuraClient): ToolDefinition[] {
         properties: {
           input: {
             type: 'object',
-            description: 'Hizmet nesnesi. Alanlar: product_id (zorunlu), name (zorunlu), slug (zorunlu, URL-safe), category_id (service_categories UUID, opsiyonel), description (duz metin), features (string dizisi: ["ozellik1","ozellik2"]), images (dosya UUID dizisi), duration (dakika, tamsayi), price (ondalikli sayi), is_package (boolean — true ise service_items ile alt hizmetler baglanir), service_type ("appointment"|"home_service"|"group_class"), is_active (boolean), sort_order (sayi).',
+            description: 'Hizmet nesnesi. Alanlar: product_id (zorunlu), name (zorunlu), slug (zorunlu — title veya name alanından uret: kucuk harf, Turkce karakterleri cevir [ç→c, ş→s, ğ→g, ı→i, ö→o, ü→u], ozel karakterleri sil, bosluklari tire yap. Ornek: "Saç Bakımı" → "sac-bakimi"), category_id (service_categories UUID, opsiyonel), description (duz metin), features (string dizisi: ["ozellik1","ozellik2"]), images (dosya UUID dizisi), duration (dakika, tamsayi), price (ondalikli sayi), is_package (boolean — true ise service_items ile alt hizmetler baglanir), service_type ("appointment"|"home_service"|"group_class"), is_active (boolean), sort_order (sayi).',
           },
         },
         required: ['input'],
@@ -194,7 +194,7 @@ export function createServiceTools(hasura: HasuraClient): ToolDefinition[] {
         properties: {
           input: {
             type: 'object',
-            description: 'Hizmet kategorisi nesnesi. Alanlar: product_id (zorunlu), name (zorunlu), slug (zorunlu, URL-safe), description (duz metin), content (Lexical JSON — zengin icerik, opsiyonel), icon (ikon adi), image (dosya UUID — file_manager.id referansi, kategori gorseli), sort_order (sayi), is_active (boolean, varsayilan: true).',
+            description: 'Hizmet kategorisi nesnesi. Alanlar: product_id (zorunlu), name (zorunlu), slug (zorunlu — title veya name alanından uret: kucuk harf, Turkce karakterleri cevir [ç→c, ş→s, ğ→g, ı→i, ö→o, ü→u], ozel karakterleri sil, bosluklari tire yap. Ornek: "Saç Bakımı" → "sac-bakimi"), description (duz metin), content (Lexical JSON — zengin icerik, opsiyonel), icon (ikon adi), image (dosya UUID — file_manager.id referansi, kategori gorseli), sort_order (sayi), is_active (boolean, varsayilan: true).',
           },
         },
         required: ['input'],

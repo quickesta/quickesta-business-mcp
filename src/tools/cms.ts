@@ -67,7 +67,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         properties: {
           input: {
             type: 'object',
-            description: 'Blog yazisi olusturma nesnesi. Alanlar: product_id (zorunlu), title (zorunlu), slug (zorunlu, URL-safe), author_id (blog_authors UUID, zorunlu), category_id (blog_categories UUID, zorunlu), content (Lexical editor JSON formatinda — yapi: { root: { children: [{ type: "paragraph", children: [{ text: "Icerik" }] }] } }), excerpt (duz metin, maks 255 karakter), featured_image (dosya UUID, opsiyonel), status ("draft" | "published" | "archived", varsayilan: "draft"), meta_title, meta_description, meta_keywords (virgullu string: "k1, k2, k3"), is_featured (boolean). Etiketler ayri eklenir: business_blog_post_tags_add kullanin.',
+            description: 'Blog yazisi olusturma nesnesi. Alanlar: product_id (zorunlu), title (zorunlu), slug (zorunlu — title/name\'den uret: kucuk harf, Turkce karakterleri cevir [ç→c, ş→s, ğ→g, ı→i, ö→o, ü→u], ozel karakterleri sil, bosluklari tire yap. Ornek: "Hoş Geldiniz" → "hos-geldiniz"), author_id (blog_authors UUID, zorunlu), category_id (blog_categories UUID, zorunlu), content (Lexical editor JSON formatinda — yapi: { root: { children: [{ type: "paragraph", children: [{ text: "Icerik" }] }] } }), excerpt (duz metin, maks 255 karakter), featured_image (dosya UUID, opsiyonel), status ("draft" | "published" | "archived", varsayilan: "draft"), meta_title, meta_description, meta_keywords (virgullu string: "k1, k2, k3"), is_featured (boolean). Etiketler ayri eklenir: business_blog_post_tags_add kullanin.',
           },
         },
         required: ['input'],
@@ -525,7 +525,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         properties: {
           input: {
             type: 'object',
-            description: 'Haber nesnesi. Alanlar: product_id (zorunlu), title (zorunlu), slug (zorunlu, URL-safe), description (duz metin kisa ozet), content (Lexical editor JSON — blog ile ayni format: { root: { children: [...] } }), featured_image (dosya UUID), status ("draft"|"published"|"archived"), published_at (ISO tarih), is_featured (boolean), meta_title, meta_description.',
+            description: 'Haber nesnesi. Alanlar: product_id (zorunlu), title (zorunlu), slug (zorunlu — title/name\'den uret: kucuk harf, Turkce karakterleri cevir [ç→c, ş→s, ğ→g, ı→i, ö→o, ü→u], ozel karakterleri sil, bosluklari tire yap. Ornek: "Hoş Geldiniz" → "hos-geldiniz"), description (duz metin kisa ozet), content (Lexical editor JSON — blog ile ayni format: { root: { children: [...] } }), featured_image (dosya UUID), status ("draft"|"published"|"archived"), published_at (ISO tarih), is_featured (boolean), meta_title, meta_description.',
           },
         },
         required: ['input'],
@@ -1160,7 +1160,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         properties: {
           input: {
             type: 'object',
-            description: 'Katalog urunu nesnesi. Alanlar: product_id (zorunlu), name (zorunlu), slug (zorunlu, URL-safe), category_id (product_categories UUID), brand_id (product_brands UUID), description (duz metin), content (Lexical JSON — detayli urun aciklamasi), price (ondalikli sayi), sale_price (indirimli fiyat), sku (stok kodu), currency ("TRY"|"USD"|"EUR", zorunlu), featured_image (dosya UUID), images (dosya UUID dizisi: ["uuid1","uuid2"]), status ("draft"|"published"|"archived", zorunlu), meta_title, meta_description, meta_keywords (virgullu string), sort_order (sayi, zorunlu), is_active (boolean, zorunlu), is_featured (boolean).',
+            description: 'Katalog urunu nesnesi. Alanlar: product_id (zorunlu), name (zorunlu), slug (zorunlu — title/name\'den uret: kucuk harf, Turkce karakterleri cevir [ç→c, ş→s, ğ→g, ı→i, ö→o, ü→u], ozel karakterleri sil, bosluklari tire yap. Ornek: "Hoş Geldiniz" → "hos-geldiniz"), category_id (product_categories UUID), brand_id (product_brands UUID), description (duz metin), content (Lexical JSON — detayli urun aciklamasi), price (ondalikli sayi), sale_price (indirimli fiyat), sku (stok kodu), currency ("TRY"|"USD"|"EUR", zorunlu), featured_image (dosya UUID), images (dosya UUID dizisi: ["uuid1","uuid2"]), status ("draft"|"published"|"archived", zorunlu), meta_title, meta_description, meta_keywords (virgullu string), sort_order (sayi, zorunlu), is_active (boolean, zorunlu), is_featured (boolean).',
           },
         },
         required: ['input'],
@@ -1286,7 +1286,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         properties: {
           input: {
             type: 'object',
-            description: 'Urun kategorisi nesnesi. Alanlar: product_id (zorunlu), name (zorunlu), slug (zorunlu, URL-safe), description (duz metin), parent_id (ust kategori UUID — hiyerarsik yapilar icin, opsiyonel), sort_order (sayi), is_active (boolean).',
+            description: 'Urun kategorisi nesnesi. Alanlar: product_id (zorunlu), name (zorunlu), slug (zorunlu — title/name\'den uret: kucuk harf, Turkce karakterleri cevir [ç→c, ş→s, ğ→g, ı→i, ö→o, ü→u], ozel karakterleri sil, bosluklari tire yap. Ornek: "Hoş Geldiniz" → "hos-geldiniz"), description (duz metin), parent_id (ust kategori UUID — hiyerarsik yapilar icin, opsiyonel), sort_order (sayi), is_active (boolean).',
           },
         },
         required: ['input'],
@@ -1389,7 +1389,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         properties: {
           input: {
             type: 'object',
-            description: 'Urun markasi nesnesi. Alanlar: product_id (zorunlu), name (zorunlu), slug (zorunlu, URL-safe), image_id (dosya UUID — marka logosu, file_manager.id referansi), description (duz metin), website_url (marka web sitesi URL), parent_id (ust marka UUID, hiyerarsik, opsiyonel), is_active (boolean), is_featured (boolean), sort_order (sayi).',
+            description: 'Urun markasi nesnesi. Alanlar: product_id (zorunlu), name (zorunlu), slug (zorunlu — title/name\'den uret: kucuk harf, Turkce karakterleri cevir [ç→c, ş→s, ğ→g, ı→i, ö→o, ü→u], ozel karakterleri sil, bosluklari tire yap. Ornek: "Hoş Geldiniz" → "hos-geldiniz"), image_id (dosya UUID — marka logosu, file_manager.id referansi), description (duz metin), website_url (marka web sitesi URL), parent_id (ust marka UUID, hiyerarsik, opsiyonel), is_active (boolean), is_featured (boolean), sort_order (sayi).',
           },
         },
         required: ['input'],

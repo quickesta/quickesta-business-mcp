@@ -1040,7 +1040,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
         properties: {
           product_id: { type: 'string', description: 'Urun ID (zorunlu)' },
           title: { type: 'string', description: 'Sayfa basligi (zorunlu, ornek: "Hakkimizda")' },
-          slug: { type: 'string', description: 'URL slug (zorunlu, ornek: "about"). Anasayfa icin bos string gonderin.' },
+          slug: { type: 'string', description: 'URL slug (zorunlu — title\'dan uret: kucuk harf, Turkce cevir [ç→c, ş→s, ğ→g, ı→i, ö→o, ü→u], ozel karakter sil, bosluk→tire. Ornek: "Hakkımızda" → "hakkimizda"). Anasayfa icin bos string gonderin.' },
           show_in_header: { type: 'boolean', description: 'Header menusunde gorunur mu? (varsayilan: true)' },
           show_in_footer: { type: 'boolean', description: 'Footer menusunde gorunur mu? (varsayilan: true)' },
           is_homepage: { type: 'boolean', description: 'Anasayfa mi? (varsayilan: false). True ise diger sayfalarin is_homepage otomatik temizlenmez — studio_pages_set_homepage kullanin.' },
