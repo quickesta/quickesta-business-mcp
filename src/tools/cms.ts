@@ -1115,7 +1115,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
       handler: async (args: Record<string, unknown>) => {
         return hasura.query({
           query: `query($product_id: uuid!) {
-            product_catalog(where: {product_id: {_eq: $product_id}}, order_by: {sort_order: asc}) {
+            products_catalog(where: {product_id: {_eq: $product_id}}, order_by: {sort_order: asc}) {
               id product_id category_id brand_id name slug description content price sale_price sku featured_image images status published_at meta_title meta_description sort_order is_active created_at updated_at
               product_category { id name }
               product_brand { id name }
@@ -1140,7 +1140,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
       handler: async (args: Record<string, unknown>) => {
         return hasura.query({
           query: `query($id: uuid!) {
-            product_catalog_by_pk(id: $id) {
+            products_catalog_by_pk(id: $id) {
               id product_id category_id brand_id name slug description content price sale_price sku featured_image images status published_at meta_title meta_description sort_order is_active created_at updated_at
               product_category { id name }
               product_brand { id name }
@@ -1167,8 +1167,8 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
       },
       handler: async (args: Record<string, unknown>) => {
         return hasura.query({
-          query: `mutation($input: product_catalog_insert_input!) {
-            insert_product_catalog_one(object: $input) {
+          query: `mutation($input: products_catalog_insert_input!) {
+            insert_products_catalog_one(object: $input) {
               id product_id category_id brand_id name slug description content price sale_price sku featured_image images status published_at meta_title meta_description sort_order is_active created_at updated_at
             }
           }`,
@@ -1194,8 +1194,8 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
       },
       handler: async (args: Record<string, unknown>) => {
         return hasura.query({
-          query: `mutation($id: uuid!, $input: product_catalog_set_input!) {
-            update_product_catalog_by_pk(pk_columns: {id: $id}, _set: $input) {
+          query: `mutation($id: uuid!, $input: products_catalog_set_input!) {
+            update_products_catalog_by_pk(pk_columns: {id: $id}, _set: $input) {
               id product_id category_id brand_id name slug description content price sale_price sku featured_image images status published_at meta_title meta_description sort_order is_active created_at updated_at
             }
           }`,
@@ -1218,7 +1218,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
       handler: async (args: Record<string, unknown>) => {
         return hasura.query({
           query: `mutation($id: uuid!) {
-            delete_product_catalog_by_pk(id: $id) {
+            delete_products_catalog_by_pk(id: $id) {
               id
             }
           }`,
@@ -1241,7 +1241,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
       handler: async (args: Record<string, unknown>) => {
         return hasura.query({
           query: `mutation($id: uuid!) {
-            update_product_catalog_by_pk(pk_columns: {id: $id}, _set: {status: "published", published_at: "now()"}) {
+            update_products_catalog_by_pk(pk_columns: {id: $id}, _set: {status: "published", published_at: "now()"}) {
               id status published_at
             }
           }`,
@@ -1372,7 +1372,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `query($product_id: uuid!) {
             product_brands(where: {product_id: {_eq: $product_id}}, order_by: {name: asc}) {
-              id product_id name slug logo_url description is_active created_at
+              id product_id name slug image_id description website_url parent_id is_active is_featured sort_order created_at updated_at
             }
           }`,
           variables: { product_id: args.product_id },
@@ -1398,7 +1398,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `mutation($input: product_brands_insert_input!) {
             insert_product_brands_one(object: $input) {
-              id product_id name slug logo_url description is_active created_at
+              id product_id name slug image_id description website_url parent_id is_active is_featured sort_order created_at updated_at
             }
           }`,
           variables: { input: args.input },
@@ -1416,7 +1416,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
           id: { type: 'string', description: 'Urun marka UUID (zorunlu)' },
           input: {
             type: 'object',
-            description: 'product_brands_set_input nesnesi (name, slug, logo_url, description, is_active)',
+            description: 'Guncellenecek alanlar: name, slug, image_id (dosya UUID — file_manager.id), description, website_url, parent_id, is_active, is_featured, sort_order.',
           },
         },
         required: ['id', 'input'],
@@ -1425,7 +1425,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `mutation($id: uuid!, $input: product_brands_set_input!) {
             update_product_brands_by_pk(pk_columns: {id: $id}, _set: $input) {
-              id product_id name slug logo_url description is_active created_at
+              id product_id name slug image_id description website_url parent_id is_active is_featured sort_order created_at updated_at
             }
           }`,
           variables: { id: args.id, input: args.input },

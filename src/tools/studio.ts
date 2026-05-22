@@ -731,7 +731,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
         type: 'object' as const,
         properties: {
           theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
-          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu)' },
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, studio_pages_list\'ten donen id kullanin)' },
         },
         required: ['theme_id', 'page_id'],
       },
@@ -755,7 +755,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
         type: 'object' as const,
         properties: {
           theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
-          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu)' },
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, studio_pages_list\'ten donen id kullanin)' },
           block_type: {
             type: 'string',
             description:
@@ -817,7 +817,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
         type: 'object' as const,
         properties: {
           theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
-          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu)' },
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, studio_pages_list\'ten donen id kullanin)' },
           block_id: { type: 'string', description: 'Blok UUID (zorunlu)' },
           data: {
             type: 'object',
@@ -847,7 +847,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
         type: 'object' as const,
         properties: {
           theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
-          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu)' },
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, studio_pages_list\'ten donen id kullanin)' },
           block_id: { type: 'string', description: 'Silinecek blok UUID (zorunlu)' },
         },
         required: ['theme_id', 'page_id', 'block_id'],
@@ -874,7 +874,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
         type: 'object' as const,
         properties: {
           theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
-          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu)' },
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, studio_pages_list\'ten donen id kullanin)' },
           block_id: { type: 'string', description: 'Tasinacak blok UUID (zorunlu)' },
           to_index: { type: 'integer', description: 'Hedef pozisyon (0-tabanli, zorunlu)' },
         },
@@ -905,7 +905,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
         type: 'object' as const,
         properties: {
           theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
-          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu)' },
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, studio_pages_list\'ten donen id kullanin)' },
           block_id: { type: 'string', description: 'Kopyalanacak blok UUID (zorunlu)' },
         },
         required: ['theme_id', 'page_id', 'block_id'],
@@ -936,7 +936,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
         type: 'object' as const,
         properties: {
           theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
-          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu)' },
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, studio_pages_list\'ten donen id kullanin)' },
           blocks: {
             type: 'array',
             description:
@@ -979,7 +979,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
         type: 'object' as const,
         properties: {
           theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
-          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu)' },
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, studio_pages_list\'ten donen id kullanin)' },
           block_id: { type: 'string', description: 'Blok UUID (zorunlu)' },
           enabled: { type: 'boolean', description: 'Aktif mi? (zorunlu)' },
         },
@@ -1083,7 +1083,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
       inputSchema: {
         type: 'object' as const,
         properties: {
-          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu)' },
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, studio_pages_list\'ten donen id kullanin)' },
           title: { type: 'string', description: 'Yeni baslik (opsiyonel)' },
           slug: { type: 'string', description: 'Yeni URL slug (opsiyonel)' },
           show_in_header: { type: 'boolean', description: 'Header menusunde gorunur mu? (opsiyonel)' },
@@ -1476,7 +1476,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
         properties: {
           product_id: { type: 'string', description: 'Urun ID (zorunlu)' },
           theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
-          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu)' },
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, studio_pages_list\'ten donen id kullanin)' },
         },
         required: ['product_id', 'theme_id', 'page_id'],
       },
