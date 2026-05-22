@@ -38,7 +38,6 @@ export function createAppointmentTools(hasura: HasuraClient): ToolDefinition[] {
                 appointment_guest_services {
                   id service_id member_id duration price sort_order
                   service { id name }
-                  member { id name }
                 }
               }
             }
@@ -71,7 +70,6 @@ export function createAppointmentTools(hasura: HasuraClient): ToolDefinition[] {
                 appointment_guest_services {
                   id service_id member_id duration price sort_order
                   service { id name }
-                  member { id name }
                 }
               }
             }
@@ -111,7 +109,6 @@ export function createAppointmentTools(hasura: HasuraClient): ToolDefinition[] {
                 appointment_guest_services {
                   id service_id member_id duration price sort_order
                   service { id name }
-                  member { id name }
                 }
               }
             }

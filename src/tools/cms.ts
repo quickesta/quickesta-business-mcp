@@ -634,7 +634,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `query($product_id: uuid!) {
             pages(where: {product_id: {_eq: $product_id}}, order_by: {sort_order: asc}) {
-              id product_id title slug featured_image status published_at meta_title meta_description sort_order created_at updated_at
+              id product_id title slug status published_at meta_title meta_description meta_keywords sort_order parent_id is_homepage show_in_header show_in_footer is_default created_at updated_at
             }
           }`,
           variables: { product_id: args.product_id },
@@ -657,7 +657,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `query($id: uuid!) {
             pages_by_pk(id: $id) {
-              id product_id title slug featured_image status published_at meta_title meta_description sort_order created_at updated_at
+              id product_id title slug status published_at meta_title meta_description meta_keywords sort_order parent_id is_homepage show_in_header show_in_footer is_default created_at updated_at
             }
           }`,
           variables: { id: args.id },
@@ -674,7 +674,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         properties: {
           input: {
             type: 'object',
-            description: 'pages_insert_input nesnesi (product_id, title, slug, content, featured_image, status, meta_title, meta_description, sort_order)',
+            description: 'Sayfa nesnesi. product_id (zorunlu), title (zorunlu), slug (zorunlu), status ("draft"|"published"|"archived"), meta_title, meta_description, meta_keywords, sort_order, parent_id (ust sayfa UUID), is_homepage (boolean), show_in_header (boolean), show_in_footer (boolean).',
           },
         },
         required: ['input'],
@@ -683,7 +683,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `mutation($input: pages_insert_input!) {
             insert_pages_one(object: $input) {
-              id product_id title slug featured_image status published_at meta_title meta_description sort_order created_at updated_at
+              id product_id title slug status published_at meta_title meta_description meta_keywords sort_order parent_id is_homepage show_in_header show_in_footer is_default created_at updated_at
             }
           }`,
           variables: { input: args.input },
@@ -701,7 +701,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
           id: { type: 'string', description: 'Sayfa UUID (zorunlu)' },
           input: {
             type: 'object',
-            description: 'pages_set_input nesnesi (title, slug, content, featured_image, status, meta_title, meta_description, sort_order)',
+            description: 'Guncellenecek alanlar: title, slug, status ("draft"|"published"|"archived"), meta_title, meta_description, meta_keywords, sort_order, parent_id, is_homepage, show_in_header, show_in_footer.',
           },
         },
         required: ['id', 'input'],
@@ -710,7 +710,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `mutation($id: uuid!, $input: pages_set_input!) {
             update_pages_by_pk(pk_columns: {id: $id}, _set: $input) {
-              id product_id title slug featured_image status published_at meta_title meta_description sort_order created_at updated_at
+              id product_id title slug status published_at meta_title meta_description meta_keywords sort_order parent_id is_homepage show_in_header show_in_footer is_default created_at updated_at
             }
           }`,
           variables: { id: args.id, input: args.input },
