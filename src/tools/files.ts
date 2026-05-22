@@ -5,9 +5,44 @@
  * Tüm sorgular $variable sözdizimi kullanır — string interpolasyon yok.
  */
 
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import { randomUUID } from 'crypto'
 import type { HasuraClient } from '../hasura-client.js'
 import type { ToolDefinition } from '../types.js'
 import { getDateRanges } from '../utils.js'
+
+// ── S3 (Hetzner Object Storage) client ──
+
+const S3_ENDPOINT = process.env.HETZNER_ENDPOINT || ''
+const S3_REGION = process.env.HETZNER_REGION || 'fsn1'
+const S3_ACCESS_KEY = process.env.HETZNER_ACCESS_KEY || ''
+const S3_SECRET_KEY = process.env.HETZNER_SECRET_KEY || ''
+const S3_BUCKET = process.env.HETZNER_BUCKET_NAME || 'quickesta-object-storage-1'
+const S3_PROJECT = process.env.PROJECT_NAME || 'quickesta-business'
+
+const s3Configured = !!(S3_ENDPOINT && S3_ACCESS_KEY && S3_SECRET_KEY)
+
+const s3Client = s3Configured
+  ? new S3Client({
+      endpoint: S3_ENDPOINT,
+      region: S3_REGION,
+      credentials: { accessKeyId: S3_ACCESS_KEY, secretAccessKey: S3_SECRET_KEY },
+      forcePathStyle: true,
+    })
+  : null
+
+function getFileType(mimeType: string): string {
+  if (mimeType.startsWith('image/')) return 'image'
+  if (mimeType.startsWith('video/')) return 'video'
+  if (mimeType.startsWith('audio/')) return 'audio'
+  return 'document'
+}
+
+function getExtension(filename: string): string {
+  const dot = filename.lastIndexOf('.')
+  return dot >= 0 ? filename.slice(dot) : ''
+}
 
 // ── Field fragments ──
 
@@ -240,6 +275,107 @@ export function createFileAndMiscTools(hasura: HasuraClient): ToolDefinition[] {
         }`,
         variables: { id: args.id, product_id: args.product_id },
       }),
+    },
+
+    // ═══════════════════════════════════════════════
+    //  FILE UPLOAD & PRESIGNED URLS
+    // ═══════════════════════════════════════════════
+
+    {
+      name: 'business_files_get_upload_url',
+      description:
+        'S3 (Hetzner Object Storage) icin presigned PUT URL uretir. ' +
+        'Bu URL ile dosya yukleyebilirsiniz (HTTP PUT). ' +
+        'Yukleme sonrasi business_files_create ile DB kaydini olusturun. ' +
+        'Donus: { upload_url, s3_key, file_url, file_id, expires_in }.',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          product_id: { type: 'string', description: 'Urun ID (zorunlu)' },
+          filename: { type: 'string', description: 'Orijinal dosya adi (zorunlu, ornek: "logo.png")' },
+          content_type: { type: 'string', description: 'MIME tipi (zorunlu, ornek: "image/png", "application/pdf")' },
+          folder_path: { type: 'string', description: 'Hedef klasor yolu (opsiyonel, varsayilan: "/")' },
+          expires_in: { type: 'integer', description: 'URL gecerlilik suresi saniye (opsiyonel, varsayilan: 3600)' },
+        },
+        required: ['product_id', 'filename', 'content_type'],
+      },
+      handler: async (args: Record<string, unknown>) => {
+        if (!s3Client) throw new Error('S3 yapilandirmasi eksik. HETZNER_ENDPOINT, HETZNER_ACCESS_KEY, HETZNER_SECRET_KEY env degiskenlerini kontrol edin.')
+
+        const productId = args.product_id as string
+        const filename = args.filename as string
+        const contentType = args.content_type as string
+        const folderPath = (args.folder_path as string || '/').replace(/^\/+|\/+$/g, '')
+        const expiresIn = (args.expires_in as number) || 3600
+
+        const ext = getExtension(filename)
+        const fileId = randomUUID()
+        const uniqueName = `${fileId}${ext}`
+        const s3Key = folderPath
+          ? `${S3_PROJECT}/${productId}/${folderPath}/${uniqueName}`
+          : `${S3_PROJECT}/${productId}/${uniqueName}`
+
+        const command = new PutObjectCommand({
+          Bucket: S3_BUCKET,
+          Key: s3Key,
+          ContentType: contentType,
+          Metadata: {
+            'original-name': filename,
+            'product-id': productId,
+          },
+        })
+
+        const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn })
+        const endpointDomain = S3_ENDPOINT.replace('https://', '').replace('http://', '')
+        const fileUrl = `https://${S3_BUCKET}.${endpointDomain}/${s3Key}`
+
+        return {
+          upload_url: uploadUrl,
+          s3_key: s3Key,
+          file_url: fileUrl,
+          file_id: fileId,
+          original_name: filename,
+          unique_name: uniqueName,
+          content_type: contentType,
+          file_type: getFileType(contentType),
+          folder_path: folderPath || '/',
+          expires_in: expiresIn,
+          instructions: 'Bu URL\'ye HTTP PUT istegi ile dosya yukleyin. Content-Type header\'i "' + contentType + '" olmali. ' +
+            'Yukleme sonrasi business_files_create ile DB kaydini olusturun: ' +
+            '{ product_id: "' + productId + '", name: "' + uniqueName + '", original_name: "' + filename + '", ' +
+            'file_path: "' + s3Key + '", s3_key: "' + s3Key + '", file_url: "' + fileUrl + '", ' +
+            'file_type: "' + getFileType(contentType) + '", mime_type: "' + contentType + '", folder_path: "' + (folderPath || '/') + '" }',
+        }
+      },
+    },
+
+    {
+      name: 'business_files_get_download_url',
+      description:
+        'Mevcut bir dosya icin presigned GET URL uretir (okuma/goruntuleme). ' +
+        's3_key veya file_path gerekli. Donus: { download_url, expires_in }.',
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          s3_key: { type: 'string', description: 'Dosyanin S3 key\'i (zorunlu)' },
+          expires_in: { type: 'integer', description: 'URL gecerlilik suresi saniye (opsiyonel, varsayilan: 3600)' },
+        },
+        required: ['s3_key'],
+      },
+      handler: async (args: Record<string, unknown>) => {
+        if (!s3Client) throw new Error('S3 yapilandirmasi eksik. HETZNER_ENDPOINT, HETZNER_ACCESS_KEY, HETZNER_SECRET_KEY env degiskenlerini kontrol edin.')
+
+        const s3Key = args.s3_key as string
+        const expiresIn = (args.expires_in as number) || 3600
+
+        const command = new GetObjectCommand({
+          Bucket: S3_BUCKET,
+          Key: s3Key,
+        })
+
+        const downloadUrl = await getSignedUrl(s3Client, command, { expiresIn })
+        return { download_url: downloadUrl, s3_key: s3Key, expires_in: expiresIn }
+      },
     },
 
     // ═══════════════════════════════════════════════
