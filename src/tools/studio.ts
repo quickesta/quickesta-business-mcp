@@ -70,9 +70,9 @@ const DEFAULT_BLOCK_DATA: Record<string, () => any> = {
   hero: () => ({
     variant: 'centered',
     heroStyle: 'default',
-    title: 'Hos geldiniz',
+    title: 'Hoş Geldiniz',
     subtitle: '',
-    ctaPrimary: { label: 'Hemen Baslayin', href: '/contact' },
+    ctaPrimary: { label: 'Hemen Başlayın', href: '/contact' },
     ctaSecondary: undefined,
     showImage: false,
     imageUrl: '',
@@ -87,7 +87,7 @@ const DEFAULT_BLOCK_DATA: Record<string, () => any> = {
     limit: 9,
   }),
   products: () => ({
-    title: 'Urunler',
+    title: 'Ürünler',
     subtitle: '',
     columns: 3,
     limit: 12,
@@ -106,12 +106,12 @@ const DEFAULT_BLOCK_DATA: Record<string, () => any> = {
     limit: 6,
   }),
   faq: () => ({
-    title: 'Sikca Sorulan Sorular',
+    title: 'Sıkça Sorulan Sorular',
     subtitle: '',
     style: 'accordion',
   }),
   testimonials: () => ({
-    title: 'Musteri Yorumlari',
+    title: 'Müşteri Yorumları',
     subtitle: '',
     layout: 'grid',
     columns: 3,
@@ -128,7 +128,7 @@ const DEFAULT_BLOCK_DATA: Record<string, () => any> = {
     columns: 3,
   }),
   cta: () => ({
-    title: 'Hemen Baslayin',
+    title: 'Hemen Başlayın',
     subtitle: '',
     buttonLabel: 'Randevu Al',
     buttonHref: '/book',
@@ -164,7 +164,7 @@ const DEFAULT_BLOCK_DATA: Record<string, () => any> = {
     items: [],
   }),
   working_model: () => ({
-    title: 'Calisma Modelimiz',
+    title: 'Çalışma Modelimiz',
     subtitle: '',
     steps: [],
   }),
@@ -187,7 +187,7 @@ const DEFAULT_BLOCK_DATA: Record<string, () => any> = {
     buttonHref: '/book',
   }),
   contact_form: () => ({
-    title: 'Bize Ulasin',
+    title: 'Bize Ulaşın',
   }),
 }
 
@@ -233,7 +233,8 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
       name: 'studio_themes_create_draft',
       description:
         'Yeni draft tema olusturur. Config: { version: "1.0.0", colors, typography, layout, darkMode, header, footer, pageBlocks }. ' +
-        'schema_version daima "1.0.0" gonderilmeli.',
+        'schema_version daima "1.0.0" gonderilmeli. UYARI: pageBlocks bos ({}) gonderirseniz storefront varsayilan placeholder icerik gosterir. ' +
+        'Mevcut bir temayi kopyalamak icin parent_id verin VE parent\'in pageBlocks\'unu config\'e dahil edin.',
       inputSchema: {
         type: 'object' as const,
         properties: {
@@ -277,8 +278,10 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     {
       name: 'studio_themes_update_draft',
       description:
-        'Draft temanin TUM config JSONB\'sini gunceller. Komple config gonderin — parcali guncelleme icin ' +
-        'once studio_themes_get_active ile mevcut config\'i alin, degistirin, buraya gonderin.',
+        'Draft temanin TUM config JSONB\'sini REPLACE eder (partial update DEGIL). ' +
+        'Kucuk degisiklikler icin studio_theme_update_colors, studio_theme_update_typography, ' +
+        'studio_theme_update_layout, studio_theme_update_header, studio_theme_update_footer kullanin — ' +
+        'bunlar mevcut config\'i okur, degistirir, geri yazar. Bu tool ise komple config gondermenizi gerektirir.',
       inputSchema: {
         type: 'object' as const,
         properties: {
@@ -335,7 +338,8 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
         'Draft temanin renklerini gunceller. Her renk HSL objesi: { h: 0-360, s: 0-100, l: 0-100 }. ' +
         '17 token: background, foreground, primary, primaryForeground, secondary, secondaryForeground, ' +
         'accent, accentForeground, muted, mutedForeground, border, input, ring, card, cardForeground, ' +
-        'destructive, destructiveForeground. Sadece degisen token\'lari gonderin, geri kalani korunur.',
+        'destructive, destructiveForeground. Her renk { h: 0-360, s: 0-100, l: 0-100 } OBJESI olmalidir. ' +
+        'String format ("220 90% 50%") KABUL EDILMEZ — frontend render etmez. Sadece degisen token\'lari gonderin.',
       inputSchema: {
         type: 'object' as const,
         properties: {
@@ -359,8 +363,8 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
       name: 'studio_theme_update_typography',
       description:
         'Draft temanin tipografi ayarlarini gunceller. ' +
-        'fontFamily: "inter"|"geist"|"system"|"serif"|"mono", ' +
-        'baseSize: 12-20 (px), headingScale: 1.1-1.5 (carpan), ' +
+        'fontFamily: "inter"|"geist"|"system"|"serif"|"mono" (SADECE bu 5 preset — diger degerler frontend tarafindan TANINMAZ), ' +
+        'baseSize: 12-20 tamsayi (px), headingScale: 1.1-1.5 ondalikli sayi (baslik boyut carpani), ' +
         'weight: "normal"|"medium"|"semibold"|"bold".',
       inputSchema: {
         type: 'object' as const,
@@ -385,8 +389,9 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
       name: 'studio_theme_update_layout',
       description:
         'Draft temanin layout ayarlarini gunceller. ' +
-        'radius: 0-2 (rem, border radius), containerWidth: "narrow"|"default"|"wide"|"full", ' +
-        'spacing: "compact"|"default"|"relaxed".',
+        'radius: 0-2 ondalikli sayi (rem, border radius), ' +
+        'containerWidth: "narrow"|"default"|"wide"|"full" (SADECE bu 4 preset), ' +
+        'spacing: "compact"|"default"|"relaxed" (SADECE bu 3 preset).',
       inputSchema: {
         type: 'object' as const,
         properties: {
@@ -526,10 +531,10 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
             },
           },
           {
-            type: 'products', category: 'data', label: 'Urunler',
+            type: 'products', category: 'data', label: 'Ürünler',
             description: 'CMS\'deki urun katalogunu grid olarak gosterir.',
             data_fields: {
-              title: { type: 'string', default: 'Urunler' },
+              title: { type: 'string', default: 'Ürünler' },
               subtitle: { type: 'string', optional: true },
               columns: { type: 'number', min: 1, max: 4, default: 3 },
               limit: { type: 'number', min: 1, max: 100, default: 12 },
@@ -560,7 +565,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
             type: 'faq', category: 'data', label: 'SSS',
             description: 'Sikca sorulan sorulari accordion/kart olarak gosterir.',
             data_fields: {
-              title: { type: 'string', default: 'Sikca Sorulan Sorular' },
+              title: { type: 'string', default: 'Sıkça Sorulan Sorular' },
               subtitle: { type: 'string', optional: true },
               style: { type: 'enum', values: ['accordion', 'cards', 'simple'], default: 'accordion' },
             },
@@ -569,7 +574,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
             type: 'testimonials', category: 'data', label: 'Referanslar / Yorumlar',
             description: 'Musteri referanslarini/yorumlarini grid veya carousel olarak gosterir.',
             data_fields: {
-              title: { type: 'string', default: 'Musteri Yorumlari' },
+              title: { type: 'string', default: 'Müşteri Yorumları' },
               subtitle: { type: 'string', optional: true },
               layout: { type: 'enum', values: ['grid', 'carousel'], default: 'grid' },
               columns: { type: 'number', min: 1, max: 4, default: 3 },
@@ -598,7 +603,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
             type: 'cta', category: 'content', label: 'CTA (Aksiyon Cagrisi)',
             description: 'Dikkat cekici aksiyon butonu — randevu, iletisim vb. yonlendirme.',
             data_fields: {
-              title: { type: 'string', default: 'Hemen Baslayin' },
+              title: { type: 'string', default: 'Hemen Başlayın' },
               subtitle: { type: 'string', optional: true },
               buttonLabel: { type: 'string', default: 'Randevu Al' },
               buttonHref: { type: 'string', default: '/book' },
@@ -658,7 +663,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
             type: 'working_model', category: 'content', label: 'Calisma Modeli',
             description: 'Adim adim surec aciklamasi — "1. Randevu al → 2. Gelin → 3. Sonuc" tarzi.',
             data_fields: {
-              title: { type: 'string', default: 'Calisma Modelimiz' },
+              title: { type: 'string', default: 'Çalışma Modelimiz' },
               subtitle: { type: 'string', optional: true },
               steps: { type: 'array', item_fields: { number: 'string', title: 'string', description: 'string', icon: 'string' } },
             },
@@ -697,7 +702,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
             type: 'contact_form', category: 'functional', label: 'Iletisim Formu',
             description: 'Iletisim formu blogu — ziyaretciler mesaj gonderebilir.',
             data_fields: {
-              title: { type: 'string', default: 'Bize Ulasin' },
+              title: { type: 'string', default: 'Bize Ulaşın' },
             },
           },
         ],
@@ -1110,7 +1115,8 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     {
       name: 'studio_pages_delete',
       description:
-        'Sayfayi siler. Ayrica tema config\'inden o sayfanin bloklarini da temizler (theme_id verilirse).',
+        'Sayfayi siler. Ayrica tema config\'inden o sayfanin bloklarini da temizler (theme_id verilirse). ' +
+        'NOT: Silme sonrasi sort_order degerleri otomatik sikistirilmaz — studio_pages_reorder ile yeniden siralayabilirsiniz.',
       inputSchema: {
         type: 'object' as const,
         properties: {

@@ -101,7 +101,7 @@ export function createMemberTools(hasura: HasuraClient): ToolDefinition[] {
         properties: {
           input: {
             type: 'object',
-            description: 'members_insert_input nesnesi (product_id, name, avatar, bio, position, social_links, expertise_areas, experience_years, education, is_active, sort_order)',
+            description: 'Uye nesnesi. Alanlar: id (quickesta kullanici UUID — ZORUNLU, otomatik olusturulmaz), product_id (zorunlu), name (duz metin), avatar (dosya UUID), bio (duz metin), position (is unvani), social_links (JSON objesi: {linkedin?, twitter?, instagram?}), expertise_areas (string dizisi: ["alan1","alan2"]), experience_years (sayi), education (duz metin), is_active (boolean, varsayilan: true), sort_order (sayi).',
           },
         },
         required: ['input'],

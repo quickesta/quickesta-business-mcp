@@ -115,21 +115,38 @@ async function ensureAuth(apiKey: string): Promise<void> {
   console.error(`✓ Doğrulandı. ${count} yetkili ürün.`)
 }
 
-/** Resolve product_id: auto if single product, check if multi */
+/** Resolve product_id: auto if single product, check if multi.
+ *  Also injects into nested `input` objects used by create tools. */
 function resolveProductId(args: Record<string, unknown>): Record<string, unknown> {
   if (!sessionAllowedProductIds) throw new Error('Doğrulama yapılmadı')
 
-  // If product_id already provided, validate it
-  if (args.product_id) {
-    if (!sessionAllowedProductIds.includes(args.product_id as string)) {
-      throw new Error(`Bu ürüne erişim yetkiniz yok: ${args.product_id}`)
+  // If product_id already provided (top-level or inside input), validate it
+  const topPid = args.product_id as string | undefined
+  const inputObj = args.input as Record<string, unknown> | undefined
+  const inputPid = inputObj?.product_id as string | undefined
+  const pid = topPid || inputPid
+
+  if (pid) {
+    if (!sessionAllowedProductIds.includes(pid)) {
+      throw new Error(`Bu ürüne erişim yetkiniz yok: ${pid}`)
     }
-    return args
+    // Ensure product_id exists at both levels for tools that need it
+    const result: Record<string, unknown> = { ...args, product_id: pid }
+    if (inputObj && typeof inputObj === 'object' && !inputPid) {
+      result.input = { ...inputObj, product_id: pid }
+    }
+    return result
   }
 
   // Auto-resolve: if only 1 product, use it automatically
   if (sessionAllowedProductIds.length === 1) {
-    return { ...args, product_id: sessionAllowedProductIds[0] }
+    const autoPid = sessionAllowedProductIds[0]
+    const result: Record<string, unknown> = { ...args, product_id: autoPid }
+    // Also inject into nested input object if present
+    if (inputObj && typeof inputObj === 'object') {
+      result.input = { ...inputObj, product_id: autoPid }
+    }
+    return result
   }
 
   // Multiple products, product_id not provided — return helpful error

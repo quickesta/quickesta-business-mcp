@@ -129,7 +129,7 @@ export function createSettingsTools(hasura: HasuraClient): ToolDefinition[] {
           product_id: { type: 'string', description: 'Urun UUID (zorunlu)' },
           input: {
             type: 'object',
-            description: 'contact_info_insert_input nesnesi (email, phone, address, linkedin_url, youtube_url, twitter_url, instagram_url, facebook_url, tiktok_url)',
+            description: 'Iletisim bilgileri. Alanlar: email, phone, address (duz metin), linkedin_url, youtube_url, twitter_url, instagram_url, facebook_url, tiktok_url (URL string veya null). UYARI: Upsert tum alanlari gondermenizi gerektirir — kismi guncelleme icin once business_contact_info_get ile mevcut veriyi alin, degistirin, tekrar gonderin.',
           },
         },
         required: ['product_id', 'input'],
@@ -190,7 +190,7 @@ export function createSettingsTools(hasura: HasuraClient): ToolDefinition[] {
           product_id: { type: 'string', description: 'Urun UUID (zorunlu)' },
           input: {
             type: 'object',
-            description: 'site_info_insert_input nesnesi (company_name, company_description, slogan, founded_year, footer_text, footer_copyright, website_url, meta_description, meta_keywords, auth_mode, logo_light, logo_dark, favicon)',
+            description: 'Site bilgileri. Alanlar: company_name (duz metin), company_description, slogan, founded_year (tamsayi: 2020), footer_text, footer_copyright, website_url, meta_description, meta_keywords (PostgreSQL text dizisi — JSON array gonderin: ["k1","k2"], virgullu string KABUL EDILMEZ), auth_mode ("public"|"private"), logo_light (dosya UUID veya null), logo_dark (dosya UUID veya null), favicon (dosya UUID veya null). UYARI: Upsert tum alanlari gondermenizi gerektirir — kismi guncelleme icin once business_site_info_get ile mevcut veriyi alin, degistirin, tekrar gonderin.',
           },
         },
         required: ['product_id', 'input'],
@@ -275,7 +275,7 @@ export function createSettingsTools(hasura: HasuraClient): ToolDefinition[] {
           product_id: { type: 'string', description: 'Urun UUID (zorunlu)' },
           input: {
             type: 'object',
-            description: 'policies_insert_input nesnesi (policy_type, title, content, is_active)',
+            description: 'Politika nesnesi. Alanlar: product_id (zorunlu), policy_type ("privacy"|"terms"|"cookies"|"refund" vb., zorunlu), title (baslik, zorunlu), content (Lexical editor JSON — blog ile ayni format: { root: { children: [...] } }), is_active (boolean, varsayilan: true). Ayni product+policy_type varsa gunceller (upsert).',
           },
         },
         required: ['product_id', 'input'],

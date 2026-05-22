@@ -284,7 +284,7 @@ export function createThemeTools(hasura: HasuraClient): ToolDefinition[] {
 
     {
       name: 'business_blog_post_tags_add',
-      description: 'Blog yazisinina etiketler ekler (toplu).',
+      description: 'Blog yazisina etiket atar. ONCE business_blog_tags_create ile etiket olusturun, SONRA bu tool ile yaziya atayin. objects: [{post_id: "yazi-uuid", tag_id: "etiket-uuid"}] dizisi gonderin.',
       inputSchema: {
         type: 'object' as const,
         properties: {

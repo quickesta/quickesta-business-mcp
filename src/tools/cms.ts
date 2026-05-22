@@ -67,7 +67,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         properties: {
           input: {
             type: 'object',
-            description: 'blog_posts_insert_input nesnesi (product_id, title, slug, excerpt, content, featured_image, status, meta_title, meta_description)',
+            description: 'Blog yazisi olusturma nesnesi. Alanlar: product_id (zorunlu), title (zorunlu), slug (zorunlu, URL-safe), author_id (blog_authors UUID, zorunlu), category_id (blog_categories UUID, zorunlu), content (Lexical editor JSON formatinda — yapi: { root: { children: [{ type: "paragraph", children: [{ text: "Icerik" }] }] } }), excerpt (duz metin, maks 255 karakter), featured_image (dosya UUID, opsiyonel), status ("draft" | "published" | "archived", varsayilan: "draft"), meta_title, meta_description, meta_keywords (virgullu string: "k1, k2, k3"), is_featured (boolean). Etiketler ayri eklenir: business_blog_post_tags_add kullanin.',
           },
         },
         required: ['input'],
@@ -94,7 +94,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
           id: { type: 'string', description: 'Blog yazi UUID (zorunlu)' },
           input: {
             type: 'object',
-            description: 'blog_posts_set_input nesnesi (title, slug, excerpt, content, featured_image, status, meta_title, meta_description)',
+            description: 'Guncellenecek alanlar. content: Lexical JSON ({ root: { children: [...] } }), featured_image: dosya UUID veya null, status: "draft"|"published"|"archived", excerpt: duz metin maks 255 kar, meta_keywords: virgullu string.',
           },
         },
         required: ['id', 'input'],
@@ -399,7 +399,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         properties: {
           input: {
             type: 'object',
-            description: 'blog_authors_insert_input nesnesi (product_id, name, bio, avatar, social_links)',
+            description: 'Blog yazari nesnesi. Alanlar: product_id (zorunlu), user_id (members tablosundaki uye UUID — zorunlu, yazar adi members.name uzerinden gelir), bio (duz metin), avatar (dosya UUID), social_links (JSON objesi: { linkedin?: string, twitter?: string, instagram?: string, website?: string }). NOT: "name" alani YOKTUR — yazar adi user_id ile bagli members kaydindadir.',
           },
         },
         required: ['input'],
@@ -426,7 +426,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
           id: { type: 'string', description: 'Blog yazar UUID (zorunlu)' },
           input: {
             type: 'object',
-            description: 'blog_authors_set_input nesnesi (name, bio, avatar, social_links)',
+            description: 'Guncellenecek alanlar: user_id (members UUID), bio (duz metin), avatar (dosya UUID veya null), social_links (JSON objesi).',
           },
         },
         required: ['id', 'input'],
@@ -525,7 +525,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         properties: {
           input: {
             type: 'object',
-            description: 'news_insert_input nesnesi (product_id, title, slug, excerpt, content, featured_image, status, meta_title, meta_description)',
+            description: 'Haber nesnesi. Alanlar: product_id (zorunlu), title (zorunlu), slug (zorunlu, URL-safe), description (duz metin kisa ozet), content (Lexical editor JSON — blog ile ayni format: { root: { children: [...] } }), featured_image (dosya UUID), status ("draft"|"published"|"archived"), published_at (ISO tarih), is_featured (boolean), meta_title, meta_description.',
           },
         },
         required: ['input'],
@@ -552,7 +552,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
           id: { type: 'string', description: 'Haber UUID (zorunlu)' },
           input: {
             type: 'object',
-            description: 'news_set_input nesnesi (title, slug, excerpt, content, featured_image, status, meta_title, meta_description)',
+            description: 'Guncellenecek alanlar. content: Lexical JSON, featured_image: dosya UUID veya null, status: "draft"|"published"|"archived".',
           },
         },
         required: ['id', 'input'],
@@ -904,7 +904,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         properties: {
           input: {
             type: 'object',
-            description: 'faq_items_insert_input nesnesi (product_id, category_id, question, answer, sort_order, is_active)',
+            description: 'SSS maddesi nesnesi. Alanlar: product_id (zorunlu), category_id (faq_categories UUID, opsiyonel), question (DUZ METİN zorunlu — rich text DEGIL), answer (DUZ METİN zorunlu — rich text DEGIL), sort_order (sayi), is_active (boolean, varsayilan: true).',
           },
         },
         required: ['input'],
@@ -1030,7 +1030,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         properties: {
           input: {
             type: 'object',
-            description: 'references_insert_input nesnesi (product_id, name, title, description, logo_url, website_url, testimonial, rating, sort_order, is_active)',
+            description: 'Referans nesnesi. Alanlar: product_id (zorunlu), name (musteri/sirket adi, zorunlu), title (proje basligi), description (proje aciklamasi, duz metin), logo_url (dosya UUID veya URL), website_url (proje linki), testimonial (musteri yorumu, duz metin), rating (1-5 sayi), sort_order (sayi), is_active (boolean).',
           },
         },
         required: ['input'],
@@ -1160,7 +1160,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         properties: {
           input: {
             type: 'object',
-            description: 'product_catalog_insert_input nesnesi (product_id, category_id, brand_id, name, slug, description, content, price, sale_price, sku, featured_image, images, status, meta_title, meta_description, sort_order, is_active)',
+            description: 'Katalog urunu nesnesi. Alanlar: product_id (zorunlu), name (zorunlu), slug (zorunlu, URL-safe), category_id (product_categories UUID), brand_id (product_brands UUID), description (duz metin), content (Lexical JSON — detayli urun aciklamasi), price (ondalikli sayi), sale_price (indirimli fiyat), sku (stok kodu), currency ("TRY"|"USD"|"EUR", zorunlu), featured_image (dosya UUID), images (dosya UUID dizisi: ["uuid1","uuid2"]), status ("draft"|"published"|"archived", zorunlu), meta_title, meta_description, meta_keywords (virgullu string), sort_order (sayi, zorunlu), is_active (boolean, zorunlu), is_featured (boolean).',
           },
         },
         required: ['input'],
@@ -1187,7 +1187,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
           id: { type: 'string', description: 'Katalog urun UUID (zorunlu)' },
           input: {
             type: 'object',
-            description: 'product_catalog_set_input nesnesi (category_id, brand_id, name, slug, description, content, price, sale_price, sku, featured_image, images, status, meta_title, meta_description, sort_order, is_active)',
+            description: 'Guncellenecek alanlar. content: Lexical JSON, images: dosya UUID dizisi, featured_image: dosya UUID veya null, status: "draft"|"published"|"archived", price/sale_price: ondalikli sayi, currency: "TRY"|"USD"|"EUR".',
           },
         },
         required: ['id', 'input'],
