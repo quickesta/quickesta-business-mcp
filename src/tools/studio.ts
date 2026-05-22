@@ -386,7 +386,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
-      name: 'business_business_studio_theme_update_layout',
+      name: 'business_studio_theme_update_layout',
       description:
         'Draft temanin layout ayarlarini gunceller. ' +
         'radius: 0-2 ondalikli sayi (rem, border radius), ' +
@@ -493,7 +493,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     // ═══════════════════════════════════════════════════════════════════════════
 
     {
-      name: 'business_business_studio_block_types',
+      name: 'business_studio_block_types',
       description:
         'Kullanilabilir 19 blok tipini, kategorilerini ve varsayilan ayarlarini listeler. ' +
         'AI\'nin hangi bloku nerede kullanacagini anlamasi icin referans tool\'udur.',
@@ -1004,7 +1004,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     // ═══════════════════════════════════════════════════════════════════════════
 
     {
-      name: 'business_business_studio_pages_list',
+      name: 'business_studio_pages_list',
       description:
         'Urunun tum sayfalarini sirasiyla listeler. Her sayfa: id, title, slug, sort_order, ' +
         'show_in_header, show_in_footer, is_homepage, parent_id, meta_title, meta_description.',
@@ -1150,7 +1150,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
-      name: 'business_business_studio_pages_reorder',
+      name: 'business_studio_pages_reorder',
       description:
         'Sayfalarin sirasini toplu gunceller. Her sayfa icin yeni sort_order degeri gonderin.',
       inputSchema: {
