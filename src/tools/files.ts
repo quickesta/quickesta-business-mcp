@@ -305,15 +305,20 @@ export function createFileAndMiscTools(hasura: HasuraClient): ToolDefinition[] {
         const productId = args.product_id as string
         const filename = args.filename as string
         const contentType = args.content_type as string
-        const folderPath = (args.folder_path as string || '/').replace(/^\/+|\/+$/g, '')
         const expiresIn = (args.expires_in as number) || 3600
+
+        // Dashboard format: folderPath always starts/ends with "/" (e.g., "/", "/images/")
+        let folderPath = (args.folder_path as string) || '/'
+        if (!folderPath.startsWith('/')) folderPath = '/' + folderPath
+        if (!folderPath.endsWith('/')) folderPath = folderPath + '/'
 
         const ext = getExtension(filename)
         const fileId = randomUUID()
         const uniqueName = `${fileId}${ext}`
-        const s3Key = folderPath
-          ? `${S3_PROJECT}/${productId}/${folderPath}/${uniqueName}`
-          : `${S3_PROJECT}/${productId}/${uniqueName}`
+
+        // Dashboard key format: quickesta-business/{productId}{folderPath}{uniqueName}
+        // e.g., quickesta-business/uuid//logo.png (root) or quickesta-business/uuid/images/logo.png
+        const s3Key = `${S3_PROJECT}/${productId}${folderPath}${uniqueName}`
 
         const command = new PutObjectCommand({
           Bucket: S3_BUCKET,
@@ -328,6 +333,7 @@ export function createFileAndMiscTools(hasura: HasuraClient): ToolDefinition[] {
         const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn })
         const endpointDomain = S3_ENDPOINT.replace('https://', '').replace('http://', '')
         const fileUrl = `https://${S3_BUCKET}.${endpointDomain}/${s3Key}`
+        const fileType = getFileType(contentType)
 
         return {
           upload_url: uploadUrl,
@@ -337,14 +343,23 @@ export function createFileAndMiscTools(hasura: HasuraClient): ToolDefinition[] {
           original_name: filename,
           unique_name: uniqueName,
           content_type: contentType,
-          file_type: getFileType(contentType),
-          folder_path: folderPath || '/',
+          file_type: fileType,
+          folder_path: folderPath,
           expires_in: expiresIn,
-          instructions: 'Bu URL\'ye HTTP PUT istegi ile dosya yukleyin. Content-Type header\'i "' + contentType + '" olmali. ' +
-            'Yukleme sonrasi business_files_create ile DB kaydini olusturun: ' +
-            '{ product_id: "' + productId + '", name: "' + uniqueName + '", original_name: "' + filename + '", ' +
-            'file_path: "' + s3Key + '", s3_key: "' + s3Key + '", file_url: "' + fileUrl + '", ' +
-            'file_type: "' + getFileType(contentType) + '", mime_type: "' + contentType + '", folder_path: "' + (folderPath || '/') + '" }',
+          db_record: {
+            product_id: productId,
+            name: uniqueName,
+            original_name: filename,
+            file_path: s3Key,
+            s3_key: s3Key,
+            file_url: fileUrl,
+            file_type: fileType,
+            mime_type: contentType,
+            folder_path: folderPath,
+            is_folder: false,
+          },
+          instructions: 'Adim 1: upload_url\'ye HTTP PUT ile dosyayi yukleyin (Content-Type: ' + contentType + '). ' +
+            'Adim 2: business_files_create ile DB kaydini olusturun — db_record objesini input olarak gonderin, file_size ekleyin.',
         }
       },
     },
