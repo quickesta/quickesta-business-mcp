@@ -27,7 +27,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `query($product_id: uuid!) {
             blog_posts(where: {product_id: {_eq: $product_id}}, order_by: {created_at: desc}) {
-              id product_id title slug excerpt featured_image status published_at meta_title meta_description created_at updated_at
+              id product_id title slug excerpt featured_image status published_at author_id category_id is_featured view_count meta_title meta_description created_at updated_at
             }
           }`,
           variables: { product_id: args.product_id },
@@ -50,7 +50,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `query($id: uuid!) {
             blog_posts_by_pk(id: $id) {
-              id product_id title slug excerpt content featured_image status published_at meta_title meta_description created_at updated_at
+              id product_id title slug excerpt content featured_image status published_at author_id category_id is_featured view_count meta_title meta_description created_at updated_at
             }
           }`,
           variables: { id: args.id },
@@ -76,7 +76,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `mutation($input: blog_posts_insert_input!) {
             insert_blog_posts_one(object: $input) {
-              id product_id title slug excerpt content featured_image status published_at meta_title meta_description created_at updated_at
+              id product_id title slug excerpt content featured_image status published_at author_id category_id is_featured view_count meta_title meta_description meta_keywords created_at updated_at
             }
           }`,
           variables: { input: args.input },
@@ -103,7 +103,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `mutation($id: uuid!, $input: blog_posts_set_input!) {
             update_blog_posts_by_pk(pk_columns: {id: $id}, _set: $input) {
-              id product_id title slug excerpt content featured_image status published_at meta_title meta_description created_at updated_at
+              id product_id title slug excerpt content featured_image status published_at author_id category_id is_featured view_count meta_title meta_description meta_keywords created_at updated_at
             }
           }`,
           variables: { id: args.id, input: args.input },
@@ -485,7 +485,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `query($product_id: uuid!) {
             news(where: {product_id: {_eq: $product_id}}, order_by: {created_at: desc}) {
-              id product_id title slug excerpt content featured_image status published_at meta_title meta_description created_at updated_at
+              id product_id title slug description content featured_image status published_at is_featured view_count meta_title meta_description created_at updated_at
             }
           }`,
           variables: { product_id: args.product_id },
@@ -508,7 +508,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `query($id: uuid!) {
             news_by_pk(id: $id) {
-              id product_id title slug excerpt content featured_image status published_at meta_title meta_description created_at updated_at
+              id product_id title slug description content featured_image status published_at is_featured view_count meta_title meta_description created_at updated_at
             }
           }`,
           variables: { id: args.id },
@@ -534,7 +534,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `mutation($input: news_insert_input!) {
             insert_news_one(object: $input) {
-              id product_id title slug excerpt content featured_image status published_at meta_title meta_description created_at updated_at
+              id product_id title slug description content featured_image status published_at is_featured view_count meta_title meta_description created_at updated_at
             }
           }`,
           variables: { input: args.input },
@@ -561,7 +561,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `mutation($id: uuid!, $input: news_set_input!) {
             update_news_by_pk(pk_columns: {id: $id}, _set: $input) {
-              id product_id title slug excerpt content featured_image status published_at meta_title meta_description created_at updated_at
+              id product_id title slug description content featured_image status published_at is_featured view_count meta_title meta_description created_at updated_at
             }
           }`,
           variables: { id: args.id, input: args.input },

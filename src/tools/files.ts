@@ -120,8 +120,8 @@ export function createFileAndMiscTools(hasura: HasuraClient): ToolDefinition[] {
       },
       handler: async (args: Record<string, unknown>) => hasura.query({
         query: `query($product_id: uuid!) {
-          site_info: site_infos(where: {product_id: {_eq: $product_id}}, limit: 1) { id }
-          contact_info: contact_infos(where: {product_id: {_eq: $product_id}}, limit: 1) { id }
+          site_info(where: {product_id: {_eq: $product_id}}, limit: 1) { id }
+          contact_info(where: {product_id: {_eq: $product_id}}, limit: 1) { id }
           services_aggregate(where: {product_id: {_eq: $product_id}}) { aggregate { count } }
           members_aggregate(where: {product_id: {_eq: $product_id}}) { aggregate { count } }
           working_hours_aggregate(where: {product_id: {_eq: $product_id}}) { aggregate { count } }
