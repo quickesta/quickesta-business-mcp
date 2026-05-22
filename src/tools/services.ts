@@ -27,7 +27,7 @@ export function createServiceTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `query($product_id: uuid!) {
             services(where: {product_id: {_eq: $product_id}}, order_by: {sort_order: asc}) {
-              id product_id category_id name slug description features duration price is_package service_type is_active sort_order created_at updated_at
+              id product_id category_id name slug description features images duration price is_package service_type is_active sort_order created_at updated_at
             }
           }`,
           variables: { product_id: args.product_id },
@@ -50,7 +50,7 @@ export function createServiceTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `query($id: uuid!) {
             services_by_pk(id: $id) {
-              id product_id category_id name slug description features duration price is_package service_type is_active sort_order created_at updated_at
+              id product_id category_id name slug description features images duration price is_package service_type is_active sort_order created_at updated_at
             }
           }`,
           variables: { id: args.id },
@@ -74,7 +74,7 @@ export function createServiceTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `query($product_id: uuid!, $category_id: uuid!) {
             services(where: {product_id: {_eq: $product_id}, category_id: {_eq: $category_id}}, order_by: {sort_order: asc}) {
-              id product_id category_id name slug description features duration price is_package service_type is_active sort_order created_at updated_at
+              id product_id category_id name slug description features images duration price is_package service_type is_active sort_order created_at updated_at
             }
           }`,
           variables: { product_id: args.product_id, category_id: args.category_id },
@@ -100,7 +100,7 @@ export function createServiceTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `mutation($input: services_insert_input!) {
             insert_services_one(object: $input) {
-              id product_id category_id name slug description features duration price is_package service_type is_active sort_order created_at updated_at
+              id product_id category_id name slug description features images duration price is_package service_type is_active sort_order created_at updated_at
             }
           }`,
           variables: { input: args.input },
@@ -127,7 +127,7 @@ export function createServiceTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `mutation($id: uuid!, $input: services_set_input!) {
             update_services_by_pk(pk_columns: {id: $id}, _set: $input) {
-              id product_id category_id name slug description features duration price is_package service_type is_active sort_order created_at updated_at
+              id product_id category_id name slug description features images duration price is_package service_type is_active sort_order created_at updated_at
             }
           }`,
           variables: { id: args.id, input: args.input },
@@ -177,7 +177,7 @@ export function createServiceTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `query($product_id: uuid!) {
             service_categories(where: {product_id: {_eq: $product_id}}, order_by: {sort_order: asc}) {
-              id product_id name slug description icon sort_order is_active
+              id product_id name slug description content icon image sort_order is_active
             }
           }`,
           variables: { product_id: args.product_id },
@@ -203,7 +203,7 @@ export function createServiceTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `mutation($input: service_categories_insert_input!) {
             insert_service_categories_one(object: $input) {
-              id product_id name slug description icon sort_order is_active
+              id product_id name slug description content icon image sort_order is_active
             }
           }`,
           variables: { input: args.input },
@@ -230,7 +230,7 @@ export function createServiceTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `mutation($id: uuid!, $input: service_categories_set_input!) {
             update_service_categories_by_pk(pk_columns: {id: $id}, _set: $input) {
-              id product_id name slug description icon sort_order is_active
+              id product_id name slug description content icon image sort_order is_active
             }
           }`,
           variables: { id: args.id, input: args.input },

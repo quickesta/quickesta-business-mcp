@@ -201,7 +201,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     // ═══════════════════════════════════════════════════════════════════════════
 
     {
-      name: 'studio_themes_get_active',
+      name: 'business_studio_themes_get_active',
       description:
         'Urunun aktif draft ve published temasini getirir (sadece son birer tane). ' +
         'Config JSONB icerir: colors, typography, layout, darkMode, header, footer, pageBlocks.',
@@ -230,7 +230,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
-      name: 'studio_themes_create_draft',
+      name: 'business_studio_themes_create_draft',
       description:
         'Yeni draft tema olusturur. Config: { version: "1.0.0", colors, typography, layout, darkMode, header, footer, pageBlocks }. ' +
         'schema_version daima "1.0.0" gonderilmeli. UYARI: pageBlocks bos ({}) gonderirseniz storefront varsayilan placeholder icerik gosterir. ' +
@@ -276,11 +276,11 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
-      name: 'studio_themes_update_draft',
+      name: 'business_studio_themes_update_draft',
       description:
         'Draft temanin TUM config JSONB\'sini REPLACE eder (partial update DEGIL). ' +
-        'Kucuk degisiklikler icin studio_theme_update_colors, studio_theme_update_typography, ' +
-        'studio_theme_update_layout, studio_theme_update_header, studio_theme_update_footer kullanin — ' +
+        'Kucuk degisiklikler icin business_studio_theme_update_colors, business_studio_theme_update_typography, ' +
+        'business_studio_theme_update_layout, business_studio_theme_update_header, business_studio_theme_update_footer kullanin — ' +
         'bunlar mevcut config\'i okur, degistirir, geri yazar. Bu tool ise komple config gondermenizi gerektirir.',
       inputSchema: {
         type: 'object' as const,
@@ -295,7 +295,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
-      name: 'studio_themes_publish',
+      name: 'business_studio_themes_publish',
       description:
         'Atomik tema yayinlama — mevcut published temayi arsivler, draft\'i published yapar ve versiyonu arttirir. ' +
         'Bu islem canli storefront\'u aninda gunceller.',
@@ -333,7 +333,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     // ═══════════════════════════════════════════════════════════════════════════
 
     {
-      name: 'studio_theme_update_colors',
+      name: 'business_studio_theme_update_colors',
       description:
         'Draft temanin renklerini gunceller. Her renk HSL objesi: { h: 0-360, s: 0-100, l: 0-100 }. ' +
         '17 token: background, foreground, primary, primaryForeground, secondary, secondaryForeground, ' +
@@ -360,7 +360,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
-      name: 'studio_theme_update_typography',
+      name: 'business_studio_theme_update_typography',
       description:
         'Draft temanin tipografi ayarlarini gunceller. ' +
         'fontFamily: "inter"|"geist"|"system"|"serif"|"mono" (SADECE bu 5 preset — diger degerler frontend tarafindan TANINMAZ), ' +
@@ -386,7 +386,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
-      name: 'studio_theme_update_layout',
+      name: 'business_business_studio_theme_update_layout',
       description:
         'Draft temanin layout ayarlarini gunceller. ' +
         'radius: 0-2 ondalikli sayi (rem, border radius), ' +
@@ -411,7 +411,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
-      name: 'studio_theme_update_header',
+      name: 'business_studio_theme_update_header',
       description:
         'Draft temanin header (ust bilgi cubugu) ayarlarini gunceller. ' +
         'topBar: { enabled, height (px), backgroundColor (HSL) }, ' +
@@ -437,7 +437,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
-      name: 'studio_theme_update_footer',
+      name: 'business_studio_theme_update_footer',
       description:
         'Draft temanin footer (alt bilgi) ayarlarini gunceller. ' +
         'backgroundColor (HSL), borderColor (HSL), columns: 2-4, ' +
@@ -462,7 +462,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
-      name: 'studio_theme_toggle_dark_mode',
+      name: 'business_studio_theme_toggle_dark_mode',
       description:
         'Draft temanin karanlik mod ayarini acar/kapatir. ' +
         'Opsiyonel olarak karanlik mod icin ayri renkler verilebilir.',
@@ -493,7 +493,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     // ═══════════════════════════════════════════════════════════════════════════
 
     {
-      name: 'studio_block_types',
+      name: 'business_business_studio_block_types',
       description:
         'Kullanilabilir 19 blok tipini, kategorilerini ve varsayilan ayarlarini listeler. ' +
         'AI\'nin hangi bloku nerede kullanacagini anlamasi icin referans tool\'udur.',
@@ -724,14 +724,14 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
-      name: 'studio_blocks_list',
+      name: 'business_studio_blocks_list',
       description:
         'Bir sayfanin tum bloklarini sirasiyla listeler. Tema config\'inden pageBlocks[page_id].blocks dizisini okur.',
       inputSchema: {
         type: 'object' as const,
         properties: {
           theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
-          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, studio_pages_list\'ten donen id kullanin)' },
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, business_studio_pages_list\'ten donen id kullanin)' },
         },
         required: ['theme_id', 'page_id'],
       },
@@ -747,7 +747,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
-      name: 'studio_blocks_add',
+      name: 'business_studio_blocks_add',
       description:
         'Sayfaya yeni blok ekler. Blok tipi ve opsiyonel data verin — varsayilan degerler otomatik uygulanir. ' +
         'position ile istenen siraya eklenebilir (varsayilan: sona).',
@@ -755,7 +755,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
         type: 'object' as const,
         properties: {
           theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
-          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, studio_pages_list\'ten donen id kullanin)' },
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, business_studio_pages_list\'ten donen id kullanin)' },
           block_type: {
             type: 'string',
             description:
@@ -765,7 +765,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
           },
           data: {
             type: 'object',
-            description: 'Blok verisi (opsiyonel). Verilmezse varsayilan degerler kullanilir. Tiplere gore field\'lar icin studio_block_types tool\'unu kullanin.',
+            description: 'Blok verisi (opsiyonel). Verilmezse varsayilan degerler kullanilir. Tiplere gore field\'lar icin business_studio_block_types tool\'unu kullanin.',
           },
           position: {
             type: 'integer',
@@ -781,7 +781,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
       handler: async (args: Record<string, unknown>) => {
         const blockType = args.block_type as string
         const defaultFactory = DEFAULT_BLOCK_DATA[blockType]
-        if (!defaultFactory) throw new Error(`Gecersiz blok tipi: ${blockType}. studio_block_types ile gecerli tipleri gorun.`)
+        if (!defaultFactory) throw new Error(`Gecersiz blok tipi: ${blockType}. business_studio_block_types ile gecerli tipleri gorun.`)
 
         const { id: themeId, config } = await getThemeConfig(hasura, args.theme_id as string)
         const pageId = args.page_id as string
@@ -810,14 +810,14 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
-      name: 'studio_blocks_update',
+      name: 'business_studio_blocks_update',
       description:
         'Mevcut bir blogun data field\'larini gunceller. Sadece degisen field\'lari gonderin, geri kalani korunur.',
       inputSchema: {
         type: 'object' as const,
         properties: {
           theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
-          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, studio_pages_list\'ten donen id kullanin)' },
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, business_studio_pages_list\'ten donen id kullanin)' },
           block_id: { type: 'string', description: 'Blok UUID (zorunlu)' },
           data: {
             type: 'object',
@@ -841,13 +841,13 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
-      name: 'studio_blocks_remove',
+      name: 'business_studio_blocks_remove',
       description: 'Sayfadan bir blogu kaldirir.',
       inputSchema: {
         type: 'object' as const,
         properties: {
           theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
-          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, studio_pages_list\'ten donen id kullanin)' },
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, business_studio_pages_list\'ten donen id kullanin)' },
           block_id: { type: 'string', description: 'Silinecek blok UUID (zorunlu)' },
         },
         required: ['theme_id', 'page_id', 'block_id'],
@@ -867,14 +867,14 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
-      name: 'studio_blocks_reorder',
+      name: 'business_studio_blocks_reorder',
       description:
         'Bir blogun sayfadaki sirasini degistirir. from_index\'ten to_index\'e tasir.',
       inputSchema: {
         type: 'object' as const,
         properties: {
           theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
-          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, studio_pages_list\'ten donen id kullanin)' },
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, business_studio_pages_list\'ten donen id kullanin)' },
           block_id: { type: 'string', description: 'Tasinacak blok UUID (zorunlu)' },
           to_index: { type: 'integer', description: 'Hedef pozisyon (0-tabanli, zorunlu)' },
         },
@@ -898,14 +898,14 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
-      name: 'studio_blocks_duplicate',
+      name: 'business_studio_blocks_duplicate',
       description:
         'Bir blogu kopyalar — orijinalin hemen altina ayni data ile yeni ID\'li kopya ekler.',
       inputSchema: {
         type: 'object' as const,
         properties: {
           theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
-          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, studio_pages_list\'ten donen id kullanin)' },
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, business_studio_pages_list\'ten donen id kullanin)' },
           block_id: { type: 'string', description: 'Kopyalanacak blok UUID (zorunlu)' },
         },
         required: ['theme_id', 'page_id', 'block_id'],
@@ -928,7 +928,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
-      name: 'studio_blocks_bulk_set',
+      name: 'business_studio_blocks_bulk_set',
       description:
         'Bir sayfanin TUM bloklarini tek seferde degistirir (mevcut bloklar silinir, yenileri yazilir). ' +
         'Toplu islemler icin kullanin — ornegin sayfa sifirdan kurulum veya import.',
@@ -936,7 +936,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
         type: 'object' as const,
         properties: {
           theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
-          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, studio_pages_list\'ten donen id kullanin)' },
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, business_studio_pages_list\'ten donen id kullanin)' },
           blocks: {
             type: 'array',
             description:
@@ -972,14 +972,14 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
-      name: 'studio_blocks_toggle',
+      name: 'business_studio_blocks_toggle',
       description:
         'Bir blogu aktif/pasif yapar (gorsel olarak gizler/gosterir, silmez).',
       inputSchema: {
         type: 'object' as const,
         properties: {
           theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
-          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, studio_pages_list\'ten donen id kullanin)' },
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, business_studio_pages_list\'ten donen id kullanin)' },
           block_id: { type: 'string', description: 'Blok UUID (zorunlu)' },
           enabled: { type: 'boolean', description: 'Aktif mi? (zorunlu)' },
         },
@@ -1004,7 +1004,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     // ═══════════════════════════════════════════════════════════════════════════
 
     {
-      name: 'studio_pages_list',
+      name: 'business_business_studio_pages_list',
       description:
         'Urunun tum sayfalarini sirasiyla listeler. Her sayfa: id, title, slug, sort_order, ' +
         'show_in_header, show_in_footer, is_homepage, parent_id, meta_title, meta_description.',
@@ -1031,7 +1031,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
-      name: 'studio_pages_create',
+      name: 'business_studio_pages_create',
       description:
         'Yeni sayfa olusturur. Varsayilan olarak header ve footer\'da gorunur, status: published. ' +
         'Slug otomatik olusturulmaz — siz gonderin (ornek: "about", "services", "contact").',
@@ -1077,13 +1077,13 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
-      name: 'studio_pages_update',
+      name: 'business_studio_pages_update',
       description:
         'Sayfa ozelliklerini gunceller — baslik, slug, menude gorunurluk, SEO bilgileri, siralama.',
       inputSchema: {
         type: 'object' as const,
         properties: {
-          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, studio_pages_list\'ten donen id kullanin)' },
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, business_studio_pages_list\'ten donen id kullanin)' },
           title: { type: 'string', description: 'Yeni baslik (opsiyonel)' },
           slug: { type: 'string', description: 'Yeni URL slug (opsiyonel)' },
           show_in_header: { type: 'boolean', description: 'Header menusunde gorunur mu? (opsiyonel)' },
@@ -1113,10 +1113,10 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
-      name: 'studio_pages_delete',
+      name: 'business_studio_pages_delete',
       description:
         'Sayfayi siler. Ayrica tema config\'inden o sayfanin bloklarini da temizler (theme_id verilirse). ' +
-        'NOT: Silme sonrasi sort_order degerleri otomatik sikistirilmaz — studio_pages_reorder ile yeniden siralayabilirsiniz.',
+        'NOT: Silme sonrasi sort_order degerleri otomatik sikistirilmaz — business_studio_pages_reorder ile yeniden siralayabilirsiniz.',
       inputSchema: {
         type: 'object' as const,
         properties: {
@@ -1150,7 +1150,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
-      name: 'studio_pages_reorder',
+      name: 'business_business_studio_pages_reorder',
       description:
         'Sayfalarin sirasini toplu gunceller. Her sayfa icin yeni sort_order degeri gonderin.',
       inputSchema: {
@@ -1187,7 +1187,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
-      name: 'studio_pages_set_homepage',
+      name: 'business_studio_pages_set_homepage',
       description:
         'Atomik homepage atama — tum sayfalardaki is_homepage\'i temizler, belirtilen sayfayi homepage yapar.',
       inputSchema: {
@@ -1219,7 +1219,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     // ═══════════════════════════════════════════════════════════════════════════
 
     {
-      name: 'studio_preview_services',
+      name: 'business_studio_preview_services',
       description: 'Blok onizleme icin limitli servis listesi (services blogu verisi).',
       inputSchema: {
         type: 'object' as const,
@@ -1243,7 +1243,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
-      name: 'studio_preview_news',
+      name: 'business_studio_preview_news',
       description: 'Blok onizleme icin limitli yayinlanmis haber listesi (news blogu verisi).',
       inputSchema: {
         type: 'object' as const,
@@ -1267,7 +1267,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
-      name: 'studio_preview_blog',
+      name: 'business_studio_preview_blog',
       description: 'Blok onizleme icin limitli yayinlanmis blog yazisi listesi (blog blogu verisi).',
       inputSchema: {
         type: 'object' as const,
@@ -1291,7 +1291,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
-      name: 'studio_preview_faq',
+      name: 'business_studio_preview_faq',
       description: 'Blok onizleme icin FAQ maddeleri (faq blogu verisi, maks 8).',
       inputSchema: {
         type: 'object' as const,
@@ -1314,7 +1314,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
-      name: 'studio_preview_team',
+      name: 'business_studio_preview_team',
       description: 'Blok onizleme icin aktif ekip uyeleri listesi (team blogu verisi).',
       inputSchema: {
         type: 'object' as const,
@@ -1338,7 +1338,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
-      name: 'studio_preview_products',
+      name: 'business_studio_preview_products',
       description: 'Blok onizleme icin aktif urun katalogu listesi (products blogu verisi).',
       inputSchema: {
         type: 'object' as const,
@@ -1352,7 +1352,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
         hasura.query({
           query: `query($product_id: uuid!, $limit: Int!) {
             products_catalog(
-              where: { product_id: { _eq: $product_id }, status: { _eq: "active" } }
+              where: { product_id: { _eq: $product_id }, status: { _eq: "published" } }
               order_by: { created_at: desc }
               limit: $limit
             ) { id name price description }
@@ -1366,7 +1366,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     // ═══════════════════════════════════════════════════════════════════════════
 
     {
-      name: 'studio_onboarding_status',
+      name: 'business_studio_onboarding_status',
       description:
         'Baslangic rehberi — tum icerik turlerinin doldurulma durumunu dondurur. ' +
         'Hangi bolumler dolu, hangileri bos: site_info, working_hours, contact_info, policies, ' +
@@ -1423,7 +1423,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     // ═══════════════════════════════════════════════════════════════════════════
 
     {
-      name: 'studio_get_full_state',
+      name: 'business_studio_get_full_state',
       description:
         'Editor\'un tam durumunu tek cagirimda getirir: draft tema (config dahil), published tema, ' +
         'tum sayfalar ve onboarding durumu. AI\'nin storefront\'u anlamasi icin ilk cagri bu olmalidir.',
@@ -1467,7 +1467,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     {
-      name: 'studio_get_page_with_blocks',
+      name: 'business_studio_get_page_with_blocks',
       description:
         'Bir sayfanin CMS bilgilerini VE bloklarini birlikte getirir. ' +
         'Sayfa detayi DB\'den, bloklar tema config\'inden okunur.',
@@ -1476,7 +1476,7 @@ export function createStudioTools(hasura: HasuraClient): ToolDefinition[] {
         properties: {
           product_id: { type: 'string', description: 'Urun ID (zorunlu)' },
           theme_id: { type: 'string', description: 'Draft tema UUID (zorunlu)' },
-          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, studio_pages_list\'ten donen id kullanin)' },
+          page_id: { type: 'string', description: 'Sayfa UUID (zorunlu — slug DEGIL, business_studio_pages_list\'ten donen id kullanin)' },
         },
         required: ['product_id', 'theme_id', 'page_id'],
       },

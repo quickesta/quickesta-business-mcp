@@ -176,7 +176,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `query($product_id: uuid!) {
             blog_categories(where: {product_id: {_eq: $product_id}}, order_by: {sort_order: asc}) {
-              id product_id name slug description sort_order is_active created_at
+              id product_id name slug description color icon sort_order is_active created_at
             }
           }`,
           variables: { product_id: args.product_id },
@@ -279,7 +279,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `query($product_id: uuid!) {
             blog_tags(where: {product_id: {_eq: $product_id}}, order_by: {name: asc}) {
-              id product_id name slug created_at
+              id product_id name slug usage_count created_at
             }
           }`,
           variables: { product_id: args.product_id },
@@ -381,8 +381,8 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
       handler: async (args: Record<string, unknown>) => {
         return hasura.query({
           query: `query($product_id: uuid!) {
-            blog_authors(where: {product_id: {_eq: $product_id}}, order_by: {name: asc}) {
-              id product_id name bio avatar social_links created_at
+            blog_authors(where: {product_id: {_eq: $product_id}}, order_by: {created_at: desc}) {
+              id product_id user_id bio avatar social_links created_at
             }
           }`,
           variables: { product_id: args.product_id },
@@ -408,7 +408,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `mutation($input: blog_authors_insert_input!) {
             insert_blog_authors_one(object: $input) {
-              id product_id name bio avatar social_links created_at
+              id product_id user_id bio avatar social_links created_at
             }
           }`,
           variables: { input: args.input },
@@ -435,7 +435,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `mutation($id: uuid!, $input: blog_authors_set_input!) {
             update_blog_authors_by_pk(pk_columns: {id: $id}, _set: $input) {
-              id product_id name bio avatar social_links created_at
+              id product_id user_id bio avatar social_links created_at
             }
           }`,
           variables: { id: args.id, input: args.input },
@@ -972,13 +972,12 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
     },
 
     // ══════════════════════════════════════════
-    //  REFERANSLAR (References)
+    //  REFERANSLAR (Client References)
     // ══════════════════════════════════════════
 
-    // ── Referanslari Listele ──
     {
       name: 'business_references_list',
-      description: 'Belirli bir urune ait tum referanslari listeler.',
+      description: 'Belirli bir urune ait tum musteri referanslarini listeler.',
       inputSchema: {
         type: 'object' as const,
         properties: {
@@ -986,19 +985,16 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         },
         required: ['product_id'],
       },
-      handler: async (args: Record<string, unknown>) => {
-        return hasura.query({
-          query: `query($product_id: uuid!) {
-            references(where: {product_id: {_eq: $product_id}}, order_by: {sort_order: asc}) {
-              id product_id name title description logo_url website_url testimonial rating sort_order is_active created_at updated_at
-            }
-          }`,
-          variables: { product_id: args.product_id },
-        })
-      },
+      handler: async (args: Record<string, unknown>) => hasura.query({
+        query: `query($product_id: uuid!) {
+          client_references(where: {product_id: {_eq: $product_id}}, order_by: [{sort_order: asc}, {created_at: desc}]) {
+            id product_id client_name client_logo client_sector project_title project_description project_images project_url testimonial testimonial_author testimonial_position is_featured sort_order created_at updated_at
+          }
+        }`,
+        variables: { product_id: args.product_id },
+      }),
     },
 
-    // ── Referans Detay ──
     {
       name: 'business_references_get',
       description: 'Belirli bir referansin detaylarini getirir.',
@@ -1009,45 +1005,39 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         },
         required: ['id'],
       },
-      handler: async (args: Record<string, unknown>) => {
-        return hasura.query({
-          query: `query($id: uuid!) {
-            references_by_pk(id: $id) {
-              id product_id name title description logo_url website_url testimonial rating sort_order is_active created_at updated_at
-            }
-          }`,
-          variables: { id: args.id },
-        })
-      },
+      handler: async (args: Record<string, unknown>) => hasura.query({
+        query: `query($id: uuid!) {
+          client_references_by_pk(id: $id) {
+            id product_id client_name client_logo client_sector project_title project_description project_images project_url testimonial testimonial_author testimonial_position is_featured sort_order created_at updated_at
+          }
+        }`,
+        variables: { id: args.id },
+      }),
     },
 
-    // ── Referans Olustur ──
     {
       name: 'business_references_create',
-      description: 'Yeni bir referans olusturur.',
+      description: 'Yeni bir musteri referansi olusturur.',
       inputSchema: {
         type: 'object' as const,
         properties: {
           input: {
             type: 'object',
-            description: 'Referans nesnesi. Alanlar: product_id (zorunlu), name (musteri/sirket adi, zorunlu), title (proje basligi), description (proje aciklamasi, duz metin), logo_url (dosya UUID — file_manager.id referansi), website_url (proje linki URL), testimonial (musteri yorumu, duz metin), testimonial_author (yorum yapan kisi adi), testimonial_position (yorum yapan kisi unvani), rating (1-5 sayi), client_sector (sektor adi), project_images (dosya UUID dizisi), sort_order (sayi), is_active (boolean).',
+            description: 'Referans nesnesi. Alanlar: product_id (zorunlu), client_name (musteri/sirket adi, zorunlu), client_logo (dosya UUID — file_manager.id), client_sector (sektor adi), project_title (proje basligi), project_description (duz metin), project_images (dosya UUID dizisi), project_url (proje linki URL), testimonial (musteri yorumu, duz metin), testimonial_author (yorum yapan kisi adi), testimonial_position (yorum yapan kisi unvani), is_featured (boolean), sort_order (sayi).',
           },
         },
         required: ['input'],
       },
-      handler: async (args: Record<string, unknown>) => {
-        return hasura.query({
-          query: `mutation($input: references_insert_input!) {
-            insert_references_one(object: $input) {
-              id product_id name title description logo_url website_url testimonial rating sort_order is_active created_at updated_at
-            }
-          }`,
-          variables: { input: args.input },
-        })
-      },
+      handler: async (args: Record<string, unknown>) => hasura.query({
+        query: `mutation($input: client_references_insert_input!) {
+          insert_client_references_one(object: $input) {
+            id product_id client_name client_logo client_sector project_title project_description project_images project_url testimonial testimonial_author testimonial_position is_featured sort_order created_at updated_at
+          }
+        }`,
+        variables: { input: args.input },
+      }),
     },
 
-    // ── Referans Guncelle ──
     {
       name: 'business_references_update',
       description: 'Bir referansi gunceller.',
@@ -1057,24 +1047,21 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
           id: { type: 'string', description: 'Referans UUID (zorunlu)' },
           input: {
             type: 'object',
-            description: 'references_set_input nesnesi (name, title, description, logo_url, website_url, testimonial, rating, sort_order, is_active)',
+            description: 'Guncellenecek alanlar: client_name, client_logo (dosya UUID), client_sector, project_title, project_description, project_images (dosya UUID dizisi), project_url, testimonial, testimonial_author, testimonial_position, is_featured, sort_order.',
           },
         },
         required: ['id', 'input'],
       },
-      handler: async (args: Record<string, unknown>) => {
-        return hasura.query({
-          query: `mutation($id: uuid!, $input: references_set_input!) {
-            update_references_by_pk(pk_columns: {id: $id}, _set: $input) {
-              id product_id name title description logo_url website_url testimonial rating sort_order is_active created_at updated_at
-            }
-          }`,
-          variables: { id: args.id, input: args.input },
-        })
-      },
+      handler: async (args: Record<string, unknown>) => hasura.query({
+        query: `mutation($id: uuid!, $input: client_references_set_input!) {
+          update_client_references_by_pk(pk_columns: {id: $id}, _set: $input) {
+            id product_id client_name client_logo client_sector project_title project_description project_images project_url testimonial testimonial_author testimonial_position is_featured sort_order created_at updated_at
+          }
+        }`,
+        variables: { id: args.id, input: args.input },
+      }),
     },
 
-    // ── Referans Sil ──
     {
       name: 'business_references_delete',
       description: 'Bir referansi kalici olarak siler.',
@@ -1085,16 +1072,12 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         },
         required: ['id'],
       },
-      handler: async (args: Record<string, unknown>) => {
-        return hasura.query({
-          query: `mutation($id: uuid!) {
-            delete_references_by_pk(id: $id) {
-              id
-            }
-          }`,
-          variables: { id: args.id },
-        })
-      },
+      handler: async (args: Record<string, unknown>) => hasura.query({
+        query: `mutation($id: uuid!) {
+          delete_client_references_by_pk(id: $id) { id }
+        }`,
+        variables: { id: args.id },
+      }),
     },
 
     // ══════════════════════════════════════════
@@ -1116,7 +1099,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `query($product_id: uuid!) {
             products_catalog(where: {product_id: {_eq: $product_id}}, order_by: {sort_order: asc}) {
-              id product_id category_id brand_id name slug description content price sale_price sku featured_image images status published_at meta_title meta_description sort_order is_active created_at updated_at
+              id product_id category_id brand_id name slug model sku description short_description content images datasheets specifications price currency status is_featured is_active sort_order published_at meta_title meta_description meta_keywords created_at updated_at
               product_category { id name }
               product_brand { id name }
             }
@@ -1141,7 +1124,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `query($id: uuid!) {
             products_catalog_by_pk(id: $id) {
-              id product_id category_id brand_id name slug description content price sale_price sku featured_image images status published_at meta_title meta_description sort_order is_active created_at updated_at
+              id product_id category_id brand_id name slug model sku description short_description content images datasheets specifications price currency status is_featured is_active sort_order published_at meta_title meta_description meta_keywords created_at updated_at
               product_category { id name }
               product_brand { id name }
             }
@@ -1169,7 +1152,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `mutation($input: products_catalog_insert_input!) {
             insert_products_catalog_one(object: $input) {
-              id product_id category_id brand_id name slug description content price sale_price sku featured_image images status published_at meta_title meta_description sort_order is_active created_at updated_at
+              id product_id category_id brand_id name slug model sku description short_description content images datasheets specifications price currency status is_featured is_active sort_order published_at meta_title meta_description meta_keywords created_at updated_at
             }
           }`,
           variables: { input: args.input },
@@ -1196,7 +1179,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `mutation($id: uuid!, $input: products_catalog_set_input!) {
             update_products_catalog_by_pk(pk_columns: {id: $id}, _set: $input) {
-              id product_id category_id brand_id name slug description content price sale_price sku featured_image images status published_at meta_title meta_description sort_order is_active created_at updated_at
+              id product_id category_id brand_id name slug model sku description short_description content images datasheets specifications price currency status is_featured is_active sort_order published_at meta_title meta_description meta_keywords created_at updated_at
             }
           }`,
           variables: { id: args.id, input: args.input },
@@ -1269,7 +1252,7 @@ export function createCmsTools(hasura: HasuraClient): ToolDefinition[] {
         return hasura.query({
           query: `query($product_id: uuid!) {
             product_categories(where: {product_id: {_eq: $product_id}}, order_by: {sort_order: asc}) {
-              id product_id name slug description sort_order is_active created_at
+              id product_id name slug description parent_id sort_order is_active created_at
             }
           }`,
           variables: { product_id: args.product_id },
